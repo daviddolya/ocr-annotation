@@ -1,0 +1,82 @@
+[
+  {
+    "file": "01_geometry_img894_8.jpg",
+    "source": "geometry",
+    "image": "img894.jpg",
+    "gt_id": 8,
+    "iou": 0.5160714285714286,
+    "cer": 0.0,
+    "gt_text": "WALKER",
+    "my_text": "WALKER"
+  },
+  {
+    "file": "02_geometry_img548_5.jpg",
+    "source": "geometry",
+    "image": "img548.jpg",
+    "gt_id": 5,
+    "iou": 0.5742793791574279,
+    "cer": 0.0,
+    "gt_text": "FOOD",
+    "my_text": "FOOD"
+  },
+  {
+    "file": "03_geometry_img1543_3.jpg",
+    "source": "geometry",
+    "image": "img1543.jpg",
+    "gt_id": 3,
+    "iou": 0.587467362924282,
+    "cer": 0.0,
+    "gt_text": "CINC",
+    "my_text": "CINC"
+  },
+  {
+    "file": "04_geometry_img1543_5.jpg",
+    "source": "geometry",
+    "image": "img1543.jpg",
+    "gt_id": 5,
+    "iou": 0.5969626168224299,
+    "cer": 0.0,
+    "gt_text": "AMB",
+    "my_text": "AMB"
+  },
+  {
+    "file": "05_text_img894_4.jpg",
+    "source": "text",
+    "image": "img894.jpg",
+    "gt_id": 4,
+    "iou": 0.8404303003137606,
+    "cer": 0.9,
+    "gt_text": "Downstairs",
+    "my_text": "DOWNSTAIRS"
+  },
+  {
+    "file": "06_text_img675_4.jpg",
+    "source": "text",
+    "image": "img675.jpg",
+    "gt_id": 4,
+    "iou": 0.6816901408450704,
+    "cer": 0.8888888888888888,
+    "gt_text": "Freshness",
+    "my_text": "FRESHNESS"
+  },
+  {
+    "file": "07_text_img620_2.jpg",
+    "source": "text",
+    "image": "img620.jpg",
+    "gt_id": 2,
+    "iou": 0.8230332522303325,
+    "cer": 0.875,
+    "gt_text": "Fiorella",
+    "my_text": "FIORELLA"
+  },
+  {
+    "file": "08_text_img673_5.jpg",
+    "source": "text",
+    "image": "img673.jpg",
+    "gt_id": 5,
+    "iou": 0.7220115967885816,
+    "cer": 0.875,
+    "gt_text": "pizzaHut",
+    "my_text": "PIZZAHUT"
+  }
+]

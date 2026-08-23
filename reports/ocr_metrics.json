@@ -1,0 +1,893 @@
+{
+  "frames": 10,
+  "gt_objects": 67,
+  "my_objects": 79,
+  "matched": 43,
+  "unmatched_gt": 24,
+  "unmatched_mine": 36,
+  "iou_threshold": 0.5,
+  "iou_mean": 0.7836883897252971,
+  "iou_median": 0.8200159277940006,
+  "iou_by_orientation": {
+    "криволинейный": {
+      "pairs": 24,
+      "iou": 0.7687112546207346
+    },
+    "наклонный": {
+      "pairs": 6,
+      "iou": 0.8312974493295169
+    },
+    "горизонтальный": {
+      "pairs": 11,
+      "iou": 0.8139878334244599
+    },
+    "нечитаемый": {
+      "pairs": 2,
+      "iou": 0.6539398918219907
+    }
+  },
+  "text_pairs": 41,
+  "ref_chars": 229,
+  "cer": 0.22270742358078602,
+  "cer_macro": 0.18834688346883469,
+  "wer": 0.2682926829268293,
+  "cer_case_insensitive": 0.013100436681222707,
+  "case_share": 0.9411764705882353,
+  "exact_matches": 30,
+  "legibility_agreement": 0.9534883720930233,
+  "legibility_kappa": 0.0,
+  "legibility_matrix": [
+    [
+      41,
+      0
+    ],
+    [
+      2,
+      0
+    ]
+  ],
+  "worst_geometry": [
+    {
+      "image": "img894.jpg",
+      "gt_id": 8,
+      "iou": 0.5160714285714286,
+      "gt_text": "WALKER",
+      "my_text": "WALKER",
+      "gt_vertices": 6,
+      "my_vertices": 8
+    },
+    {
+      "image": "img548.jpg",
+      "gt_id": 5,
+      "iou": 0.5742793791574279,
+      "gt_text": "FOOD",
+      "my_text": "FOOD",
+      "gt_vertices": 4,
+      "my_vertices": 4
+    },
+    {
+      "image": "img1543.jpg",
+      "gt_id": 3,
+      "iou": 0.587467362924282,
+      "gt_text": "CINC",
+      "my_text": "CINC",
+      "gt_vertices": 6,
+      "my_vertices": 8
+    },
+    {
+      "image": "img1543.jpg",
+      "gt_id": 5,
+      "iou": 0.5969626168224299,
+      "gt_text": "AMB",
+      "my_text": "AMB",
+      "gt_vertices": 6,
+      "my_vertices": 8
+    },
+    {
+      "image": "img574.jpg",
+      "gt_id": 7,
+      "iou": 0.6350173301123831,
+      "gt_text": "#",
+      "my_text": "AWESOME!",
+      "gt_vertices": 4,
+      "my_vertices": 4
+    }
+  ],
+  "worst_text": [
+    {
+      "image": "img894.jpg",
+      "gt_id": 4,
+      "cer": 0.9,
+      "gt_text": "Downstairs",
+      "my_text": "DOWNSTAIRS"
+    },
+    {
+      "image": "img675.jpg",
+      "gt_id": 4,
+      "cer": 0.8888888888888888,
+      "gt_text": "Freshness",
+      "my_text": "FRESHNESS"
+    },
+    {
+      "image": "img620.jpg",
+      "gt_id": 2,
+      "cer": 0.875,
+      "gt_text": "Fiorella",
+      "my_text": "FIORELLA"
+    },
+    {
+      "image": "img673.jpg",
+      "gt_id": 5,
+      "cer": 0.875,
+      "gt_text": "pizzaHut",
+      "my_text": "PIZZAHUT"
+    },
+    {
+      "image": "img894.jpg",
+      "gt_id": 2,
+      "cer": 0.8333333333333334,
+      "gt_text": "Silver",
+      "my_text": "SILVER"
+    }
+  ],
+  "pairs": [
+    {
+      "image": "img10.jpg",
+      "gt_id": 2,
+      "my_id": 3,
+      "iou": 0.8964497041420119,
+      "ornt": "c",
+      "gt_text": "PEAK",
+      "my_text": "PEAK",
+      "cer": 0.0
+    },
+    {
+      "image": "img10.jpg",
+      "gt_id": 1,
+      "my_id": 4,
+      "iou": 0.8349924585218703,
+      "ornt": "c",
+      "gt_text": "THE",
+      "my_text": "THE",
+      "cer": 0.0
+    },
+    {
+      "image": "img10.jpg",
+      "gt_id": 3,
+      "my_id": 2,
+      "iou": 0.7833607907742999,
+      "ornt": "c",
+      "gt_text": "LOOKOUT",
+      "my_text": "LOOKOUT",
+      "cer": 0.0
+    },
+    {
+      "image": "img1543.jpg",
+      "gt_id": 2,
+      "my_id": 1,
+      "iou": 0.686960933536276,
+      "ornt": "c",
+      "gt_text": "QUATRE",
+      "my_text": "QUATRE",
+      "cer": 0.0
+    },
+    {
+      "image": "img1543.jpg",
+      "gt_id": 1,
+      "my_id": 5,
+      "iou": 0.6468891635764318,
+      "ornt": "c",
+      "gt_text": "MUJADES",
+      "my_text": "MUJADES",
+      "cer": 0.0
+    },
+    {
+      "image": "img1543.jpg",
+      "gt_id": 5,
+      "my_id": 2,
+      "iou": 0.5969626168224299,
+      "ornt": "c",
+      "gt_text": "AMB",
+      "my_text": "AMB",
+      "cer": 0.0
+    },
+    {
+      "image": "img1543.jpg",
+      "gt_id": 3,
+      "my_id": 3,
+      "iou": 0.587467362924282,
+      "ornt": "c",
+      "gt_text": "CINC",
+      "my_text": "CINC",
+      "cer": 0.0
+    },
+    {
+      "image": "img537.jpg",
+      "gt_id": 6,
+      "my_id": 2,
+      "iou": 0.9479422185881712,
+      "ornt": "m",
+      "gt_text": "300",
+      "my_text": "300",
+      "cer": 0.0
+    },
+    {
+      "image": "img537.jpg",
+      "gt_id": 3,
+      "my_id": 5,
+      "iou": 0.8646194926568759,
+      "ornt": "m",
+      "gt_text": "WILLIE",
+      "my_text": "WILLIE",
+      "cer": 0.0
+    },
+    {
+      "image": "img537.jpg",
+      "gt_id": 4,
+      "my_id": 6,
+      "iou": 0.863997113997114,
+      "ornt": "m",
+      "gt_text": "NELSON",
+      "my_text": "NELSON",
+      "cer": 0.0
+    },
+    {
+      "image": "img537.jpg",
+      "gt_id": 2,
+      "my_id": 4,
+      "iou": 0.8589860352155434,
+      "ornt": "c",
+      "gt_text": "STREET",
+      "my_text": "STREET",
+      "cer": 0.0
+    },
+    {
+      "image": "img537.jpg",
+      "gt_id": 5,
+      "my_id": 1,
+      "iou": 0.8389328063241107,
+      "ornt": "m",
+      "gt_text": "BLVD",
+      "my_text": "BLVD",
+      "cer": 0.0
+    },
+    {
+      "image": "img537.jpg",
+      "gt_id": 1,
+      "my_id": 3,
+      "iou": 0.7121729237770194,
+      "ornt": "c",
+      "gt_text": "2nd",
+      "my_text": "2ND",
+      "cer": 0.6666666666666666
+    },
+    {
+      "image": "img548.jpg",
+      "gt_id": 2,
+      "my_id": 5,
+      "iou": 0.8862864901561439,
+      "ornt": "c",
+      "gt_text": "ATHENS",
+      "my_text": "ATHENS",
+      "cer": 0.0
+    },
+    {
+      "image": "img548.jpg",
+      "gt_id": 1,
+      "my_id": 2,
+      "iou": 0.8746253746253746,
+      "ornt": "h",
+      "gt_text": "CONEY",
+      "my_text": "CONEY",
+      "cer": 0.0
+    },
+    {
+      "image": "img548.jpg",
+      "gt_id": 3,
+      "my_id": 3,
+      "iou": 0.8483057525610717,
+      "ornt": "h",
+      "gt_text": "ISLAND",
+      "my_text": "ISL##D",
+      "cer": 0.3333333333333333
+    },
+    {
+      "image": "img548.jpg",
+      "gt_id": 4,
+      "my_id": 4,
+      "iou": 0.7231503579952268,
+      "ornt": "h",
+      "gt_text": "GOOD",
+      "my_text": "GOOD",
+      "cer": 0.0
+    },
+    {
+      "image": "img548.jpg",
+      "gt_id": 5,
+      "my_id": 1,
+      "iou": 0.5742793791574279,
+      "ornt": "h",
+      "gt_text": "FOOD",
+      "my_text": "FOOD",
+      "cer": 0.0
+    },
+    {
+      "image": "img574.jpg",
+      "gt_id": 5,
+      "my_id": 5,
+      "iou": 0.8615879094577036,
+      "ornt": "c",
+      "gt_text": "HONG",
+      "my_text": "HONG",
+      "cer": 0.0
+    },
+    {
+      "image": "img574.jpg",
+      "gt_id": 4,
+      "my_id": 4,
+      "iou": 0.8239913221873747,
+      "ornt": "c",
+      "gt_text": "RESTAURANT",
+      "my_text": "RESTAURANT",
+      "cer": 0.0
+    },
+    {
+      "image": "img574.jpg",
+      "gt_id": 2,
+      "my_id": 2,
+      "iou": 0.8155503563850046,
+      "ornt": "c",
+      "gt_text": "JUMBO",
+      "my_text": "JUMBO",
+      "cer": 0.0
+    },
+    {
+      "image": "img574.jpg",
+      "gt_id": 3,
+      "my_id": 3,
+      "iou": 0.8123743898937698,
+      "ornt": "c",
+      "gt_text": "FLOATING",
+      "my_text": "FLOATING",
+      "cer": 0.0
+    },
+    {
+      "image": "img574.jpg",
+      "gt_id": 6,
+      "my_id": 6,
+      "iou": 0.7964760877382236,
+      "ornt": "c",
+      "gt_text": "KONG",
+      "my_text": "KONG",
+      "cer": 0.0
+    },
+    {
+      "image": "img574.jpg",
+      "gt_id": 7,
+      "my_id": 7,
+      "iou": 0.6350173301123831,
+      "ornt": "#",
+      "gt_text": "#",
+      "my_text": "AWESOME!",
+      "cer": null
+    },
+    {
+      "image": "img578.jpg",
+      "gt_id": 4,
+      "my_id": 1,
+      "iou": 0.9408484745690843,
+      "ornt": "h",
+      "gt_text": "RESTAURANT",
+      "my_text": "RESTAURANT",
+      "cer": 0.0
+    },
+    {
+      "image": "img578.jpg",
+      "gt_id": 2,
+      "my_id": 3,
+      "iou": 0.9055539055539056,
+      "ornt": "c",
+      "gt_text": "KUP",
+      "my_text": "KUP",
+      "cer": 0.0
+    },
+    {
+      "image": "img578.jpg",
+      "gt_id": 1,
+      "my_id": 5,
+      "iou": 0.9038598649536564,
+      "ornt": "c",
+      "gt_text": "KOFFEE",
+      "my_text": "KOFFEE",
+      "cer": 0.0
+    },
+    {
+      "image": "img578.jpg",
+      "gt_id": 3,
+      "my_id": 4,
+      "iou": 0.8742478148196952,
+      "ornt": "h",
+      "gt_text": "FAMILY",
+      "my_text": "FAMILY",
+      "cer": 0.0
+    },
+    {
+      "image": "img620.jpg",
+      "gt_id": 1,
+      "my_id": 6,
+      "iou": 0.8342000611807893,
+      "ornt": "c",
+      "gt_text": "Caffe",
+      "my_text": "CAFFE",
+      "cer": 0.8
+    },
+    {
+      "image": "img620.jpg",
+      "gt_id": 2,
+      "my_id": 7,
+      "iou": 0.8230332522303325,
+      "ornt": "c",
+      "gt_text": "Fiorella",
+      "my_text": "FIORELLA",
+      "cer": 0.875
+    },
+    {
+      "image": "img620.jpg",
+      "gt_id": 3,
+      "my_id": 8,
+      "iou": 0.6599415204678363,
+      "ornt": "m",
+      "gt_text": "TORREFAZIONE",
+      "my_text": "TORREAFAZIONE",
+      "cer": 0.08333333333333333
+    },
+    {
+      "image": "img673.jpg",
+      "gt_id": 7,
+      "my_id": 3,
+      "iou": 0.8200159277940006,
+      "ornt": "h",
+      "gt_text": "2F",
+      "my_text": "2F",
+      "cer": 0.0
+    },
+    {
+      "image": "img673.jpg",
+      "gt_id": 5,
+      "my_id": 2,
+      "iou": 0.7220115967885816,
+      "ornt": "c",
+      "gt_text": "pizzaHut",
+      "my_text": "PIZZAHUT",
+      "cer": 0.875
+    },
+    {
+      "image": "img673.jpg",
+      "gt_id": 2,
+      "my_id": 1,
+      "iou": 0.7209059233449477,
+      "ornt": "c",
+      "gt_text": "365",
+      "my_text": "365",
+      "cer": 0.0
+    },
+    {
+      "image": "img675.jpg",
+      "gt_id": 7,
+      "my_id": 1,
+      "iou": 0.8123515439429929,
+      "ornt": "m",
+      "gt_text": "1885",
+      "my_text": "1885",
+      "cer": 0.0
+    },
+    {
+      "image": "img675.jpg",
+      "gt_id": 6,
+      "my_id": 2,
+      "iou": 0.7412353923205343,
+      "ornt": "c",
+      "gt_text": "SINCE",
+      "my_text": "SINCE",
+      "cer": 0.0
+    },
+    {
+      "image": "img675.jpg",
+      "gt_id": 4,
+      "my_id": 3,
+      "iou": 0.6816901408450704,
+      "ornt": "c",
+      "gt_text": "Freshness",
+      "my_text": "FRESHNESS",
+      "cer": 0.8888888888888888
+    },
+    {
+      "image": "img894.jpg",
+      "gt_id": 2,
+      "my_id": 3,
+      "iou": 0.8815628815628815,
+      "ornt": "h",
+      "gt_text": "Silver",
+      "my_text": "SILVER",
+      "cer": 0.8333333333333334
+    },
+    {
+      "image": "img894.jpg",
+      "gt_id": 4,
+      "my_id": 1,
+      "iou": 0.8404303003137606,
+      "ornt": "h",
+      "gt_text": "Downstairs",
+      "my_text": "DOWNSTAIRS",
+      "cer": 0.9
+    },
+    {
+      "image": "img894.jpg",
+      "gt_id": 3,
+      "my_id": 9,
+      "iou": 0.8340874811463047,
+      "ornt": "h",
+      "gt_text": "Bar",
+      "my_text": "BAR",
+      "cer": 0.6666666666666666
+    },
+    {
+      "image": "img894.jpg",
+      "gt_id": 1,
+      "my_id": 4,
+      "iou": 0.7423124231242313,
+      "ornt": "h",
+      "gt_text": "Cross",
+      "my_text": "CROSS",
+      "cer": 0.8
+    },
+    {
+      "image": "img894.jpg",
+      "gt_id": 5,
+      "my_id": 6,
+      "iou": 0.6728624535315985,
+      "ornt": "#",
+      "gt_text": "#",
+      "my_text": "TRADITION",
+      "cer": null
+    },
+    {
+      "image": "img894.jpg",
+      "gt_id": 8,
+      "my_id": 2,
+      "iou": 0.5160714285714286,
+      "ornt": "c",
+      "gt_text": "WALKER",
+      "my_text": "WALKER",
+      "cer": 0.0
+    }
+  ],
+  "unmatched_gt_list": [
+    {
+      "image": "img10.jpg",
+      "id": 4,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img10.jpg",
+      "id": 5,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img10.jpg",
+      "id": 6,
+      "text": "THE",
+      "ornt": "h"
+    },
+    {
+      "image": "img10.jpg",
+      "id": 7,
+      "text": "PEAK",
+      "ornt": "h"
+    },
+    {
+      "image": "img10.jpg",
+      "id": 8,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img10.jpg",
+      "id": 9,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img1543.jpg",
+      "id": 4,
+      "text": "45",
+      "ornt": "m"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 1,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img578.jpg",
+      "id": 5,
+      "text": "TM",
+      "ornt": "h"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 4,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 5,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img673.jpg",
+      "id": 1,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img673.jpg",
+      "id": 3,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img673.jpg",
+      "id": 4,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img673.jpg",
+      "id": 6,
+      "text": "dc",
+      "ornt": "#"
+    },
+    {
+      "image": "img673.jpg",
+      "id": 8,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img675.jpg",
+      "id": 1,
+      "text": "More",
+      "ornt": "c"
+    },
+    {
+      "image": "img675.jpg",
+      "id": 2,
+      "text": "Than",
+      "ornt": "c"
+    },
+    {
+      "image": "img675.jpg",
+      "id": 3,
+      "text": "Just",
+      "ornt": "c"
+    },
+    {
+      "image": "img675.jpg",
+      "id": 5,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img675.jpg",
+      "id": 8,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img675.jpg",
+      "id": 9,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img894.jpg",
+      "id": 6,
+      "text": "#",
+      "ornt": "#"
+    },
+    {
+      "image": "img894.jpg",
+      "id": 7,
+      "text": "TAYLOR",
+      "ornt": "c"
+    }
+  ],
+  "unmatched_mine_list": [
+    {
+      "image": "img10.jpg",
+      "id": 1,
+      "text": "LOOKOUT"
+    },
+    {
+      "image": "img10.jpg",
+      "id": 5,
+      "text": "THE"
+    },
+    {
+      "image": "img10.jpg",
+      "id": 6,
+      "text": "PEAK"
+    },
+    {
+      "image": "img1543.jpg",
+      "id": 4,
+      "text": "5"
+    },
+    {
+      "image": "img1543.jpg",
+      "id": 6,
+      "text": "4"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 1,
+      "text": "AWESOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 8,
+      "text": "SOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 9,
+      "text": "AWESOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 10,
+      "text": "SPREAD"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 11,
+      "text": "SOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 12,
+      "text": "AWESOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 13,
+      "text": "SPREAD"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 14,
+      "text": "SOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 15,
+      "text": "SPREAD"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 16,
+      "text": "SOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 17,
+      "text": "AWESOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 18,
+      "text": "SPREAD"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 19,
+      "text": "SOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 20,
+      "text": "AWESOME"
+    },
+    {
+      "image": "img574.jpg",
+      "id": 21,
+      "text": "SPREAD"
+    },
+    {
+      "image": "img578.jpg",
+      "id": 2,
+      "text": "TM"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 1,
+      "text": "TONY"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 2,
+      "text": "# 10 00 # ##"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 3,
+      "text": "#####"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 4,
+      "text": "######"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 5,
+      "text": "###"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 9,
+      "text": "COM"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 10,
+      "text": "TRAVELSIGNPOSTS"
+    },
+    {
+      "image": "img620.jpg",
+      "id": 11,
+      "text": "PAGE"
+    },
+    {
+      "image": "img673.jpg",
+      "id": 4,
+      "text": "BILLY"
+    },
+    {
+      "image": "img675.jpg",
+      "id": 4,
+      "text": "JUST"
+    },
+    {
+      "image": "img675.jpg",
+      "id": 5,
+      "text": "THAN"
+    },
+    {
+      "image": "img675.jpg",
+      "id": 6,
+      "text": "MORE"
+    },
+    {
+      "image": "img894.jpg",
+      "id": 5,
+      "text": "TAYLOR"
+    },
+    {
+      "image": "img894.jpg",
+      "id": 7,
+      "text": "ON"
+    },
+    {
+      "image": "img894.jpg",
+      "id": 8,
+      "text": "BUILT"
+    }
+  ]
+}

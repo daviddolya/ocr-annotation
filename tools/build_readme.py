@@ -127,6 +127,15 @@ def main() -> int:
             "[annotation/GUIDELINES.md](annotation/GUIDELINES.md)",
             "- Полный отчёт — [reports/ocr_report.md](reports/ocr_report.md)",
             "- Долг по написанному не мной коду — [DEBT.md](DEBT.md)", "",
+            "Остальные этапы портфолио по качеству разметки:", "",
+            "- [A2, полигоны](https://github.com/daviddolya/polygon-annotation-agreement)"
+            " — mask IoU, Dice, Boundary IoU; оттуда перенесён `common/polygons.py`",
+            "- [A3, треки](https://github.com/daviddolya/tracking-annotation-agreement)"
+            " — IDF1, ID switches, конвенция края кадра",
+            "- [A4, скелеты](https://github.com/daviddolya/keypoint-annotation)"
+            " — OKS, PCK, согласие по видимости",
+            "- [P2, боксы](https://github.com/daviddolya/detection-annotation-quality)"
+            " — kappa 0.914, средний IoU 0.867 на 100 кадрах", "",
             "README пересобирается `tools/build_readme.py`; комментарии между маркерами",
             "`<!-- note:… -->` и `<!-- /note -->` при пересборке сохраняются.", ""]
 
