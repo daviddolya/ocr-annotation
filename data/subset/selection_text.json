@@ -1,0 +1,26 @@
+{
+  "source": "Total-Text, тестовая часть, зеркало yunusserhat/Total-Text-Dataset",
+  "task": "полигон по границе слова плюс транскрипция в атрибуте",
+  "filters": {
+    "objects_per_frame": [
+      5,
+      9
+    ],
+    "needs_curved": true,
+    "illegible_at_most": "половина"
+  },
+  "seed": 7,
+  "count": 10,
+  "files": [
+    "img10.jpg",
+    "img1543.jpg",
+    "img537.jpg",
+    "img548.jpg",
+    "img574.jpg",
+    "img578.jpg",
+    "img620.jpg",
+    "img673.jpg",
+    "img675.jpg",
+    "img894.jpg"
+  ]
+}
