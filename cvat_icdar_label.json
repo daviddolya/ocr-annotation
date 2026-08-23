@@ -7,7 +7,7 @@
         "name": "text",
         "input_type": "text",
         "mutable": true,
-        "values": [],
+        "values": [""],
         "default_value": ""
       }
     ]
