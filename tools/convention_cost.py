@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Цена одной фразы в инструкции — на этот раз в транскрипции (P4e, шаг 2).
+"""The price of one sentence in the guidelines -- this time in transcription.
 
-Берёт эталон и делает из него несколько «разметок», в которых ТЕКСТ ПРОЧИТАН
-ПРАВИЛЬНО ДО СИМВОЛА. Отличается только правило записи: приводить ли регистр,
-выбрасывать ли знаки препинания. Всё, что видно в таблице, — цена правила,
-а не аккуратности чтения.
+Takes the ground truth and derives several "annotations" from it in which THE
+TEXT IS READ CORRECTLY DOWN TO THE CHARACTER. Only the writing rule differs:
+whether case is normalised, whether punctuation is dropped. Everything the
+table shows is the price of a rule, not of careless reading.
 
     python3 tools/convention_cost.py --gt data/totaltext/gt \
         --images data/subset/selection_text.json
@@ -35,10 +35,10 @@ def main() -> int:
     objs = [o for o in load_totaltext(args.gt, images=images) if o.legible]
     refs = [o.text for o in objs]
     chars = sum(len(s) for s in refs)
-    print(f"читаемых объектов {len(refs)}, символов в эталоне {chars}; "
-          "во всех вариантах текст прочитан верно до символа")
+    print(f"legible objects {len(refs)}, reference characters {chars}; "
+          "in every variant the text is read correctly down to the character")
     print()
-    print("| правило транскрипции | CER | WER | затронуто объектов |")
+    print("| transcription rule | CER | WER | objects touched |")
     print("|---|---|---|---|")
     for key in ORDER:
         name, func = NORMALIZERS[key]
@@ -47,7 +47,7 @@ def main() -> int:
         c = corpus_cer(pairs)
         w = corpus_wer(pairs)
         print(f"| {name} | {c['cer']:.3f} | {w['wer']:.3f} | "
-              f"{touched} из {len(refs)} |")
+              f"{touched} of {len(refs)} |")
     return 0
 
 

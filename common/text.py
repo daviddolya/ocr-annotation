@@ -1,32 +1,33 @@
 #!/usr/bin/env python3
-"""Метрики транскрипции: CER и WER (P4e).
+"""Transcription metrics: CER and WER.
 
-ЧТО ЭТО МЕРИТ. Расстояние Левенштейна между двумя строками — минимальное
-число правок (вставить символ, удалить, заменить), которыми одна строка
-превращается в другую. CER нормирует это число на длину ЭТАЛОНА:
+WHAT THIS MEASURES. Levenshtein distance between two strings is the smallest
+number of edits -- insert a character, delete one, substitute one for another
+-- that turns one string into the other. CER normalises that count by the
+length of the GROUND TRUTH:
 
-    CER = правки(эталон, моё) / длина(эталон)
+    CER = edits(reference, mine) / len(reference)
 
-Знаменатель именно эталон, и это не мелочь. Нормировка на свою строку
-даёт метрику, которую можно улучшить, написав больше символов, — а с
-эталоном такой лазейки нет. Отсюда же следует свойство, которое пугает
-при первой встрече: CER НЕ ОГРАНИЧЕН ЕДИНИЦЕЙ. Если в эталоне «ABC»,
-а я написал «ABCDEFGH», правок пять, длина эталона три, CER = 1.667.
-Это не ошибка расчёта, а честный ответ: я дописал больше, чем там было.
+The denominator is the reference, and that is not a detail. Normalising by my
+own string would give a metric I could improve by writing more characters;
+with the reference there is no such loophole. It also produces the property
+that alarms people on first contact: CER IS NOT CAPPED AT ONE. If the
+reference is "ABC" and I wrote "ABCDEFGH", that is five edits over a reference
+of three, so CER = 1.667. Not a bug in the arithmetic -- an honest answer:
+I wrote more than was there.
 
-WER — то же самое, но единица правки не символ, а слово. На пословном
-датасете вроде Total-Text у объекта ровно одно слово, поэтому WER
-вырождается в долю объектов, транскрибированных не идентично. Полезен
-он всё равно: CER 0.1 может означать «в каждом слове по одной ошибке»
-или «одно слово из десяти прочитано целиком неверно», и WER их различает.
+WER is the same thing with the word as the unit of edit. On a word-level
+dataset such as Total-Text an object holds exactly one word, so WER collapses
+into "share of objects transcribed non-identically". It still earns its place:
+CER 0.1 can mean "one error in every word" or "one word in ten read entirely
+wrong", and WER tells those apart.
 
-МИКРО- И МАКРОУСРЕДНЕНИЕ. CER по набору считается как сумма правок,
-делённая на суммарную длину эталонов (микро), а не как среднее
-покадровых CER (макро). Иначе одно короткое слово с одной ошибкой
-весит столько же, сколько длинная вывеска, прочитанная целиком верно.
-Обе величины возвращаются, и в отчёте называется, какая приводится.
+MICRO VS MACRO AVERAGING. Corpus CER is the sum of edits divided by the total
+reference length (micro), not the mean of per-object CERs (macro). Otherwise a
+one-character object with one error weighs as much as a long sign read
+perfectly. Both are returned, and the report states which one it quotes.
 
-Зависимостей нет.
+No dependencies.
 """
 
 import argparse
@@ -34,8 +35,8 @@ import unicodedata
 
 
 def levenshtein(a, b) -> int:
-    """Минимальное число правок. Работает и на строке символов,
-    и на списке слов — важно лишь, что элементы сравнимы."""
+    """Smallest number of edits. Works on a string of characters and on a list
+    of words alike -- all that matters is that the elements compare."""
     if a == b:
         return 0
     if not a:
@@ -46,16 +47,16 @@ def levenshtein(a, b) -> int:
     for i, ca in enumerate(a, 1):
         cur = [i]
         for j, cb in enumerate(b, 1):
-            cur.append(min(prev[j] + 1,          # удалить
-                           cur[j - 1] + 1,       # вставить
-                           prev[j - 1] + (ca != cb)))  # заменить
+            cur.append(min(prev[j] + 1,          # delete
+                           cur[j - 1] + 1,       # insert
+                           prev[j - 1] + (ca != cb)))  # substitute
         prev = cur
     return prev[-1]
 
 
 def cer(ref: str, hyp: str) -> float:
-    """CER одной пары. Пустой эталон обрабатывается отдельно: делить не на что,
-    и любая непустая гипотеза — это чистая выдумка."""
+    """CER of a single pair. An empty reference is handled apart: there is
+    nothing to divide by, and any non-empty hypothesis is pure invention."""
     if not ref:
         return 0.0 if not hyp else float("inf")
     return levenshtein(ref, hyp) / len(ref)
@@ -69,7 +70,7 @@ def wer(ref: str, hyp: str) -> float:
 
 
 def corpus_cer(pairs: list[tuple[str, str]]) -> dict:
-    """Микро- и макроусреднение по набору пар (эталон, моё)."""
+    """Micro and macro averaging over pairs of (reference, mine)."""
     edits = sum(levenshtein(r, h) for r, h in pairs)
     chars = sum(len(r) for r, _ in pairs)
     per_pair = [cer(r, h) for r, h in pairs if r]
@@ -90,7 +91,7 @@ def corpus_wer(pairs: list[tuple[str, str]]) -> dict:
             "edits": edits, "ref_words": words}
 
 
-# --- нормализации: каждая соответствует одному решению инструкции ---------
+# --- normalisations: each one stands for a single guideline decision -------
 
 def as_is(s: str) -> str:
     return s
@@ -105,7 +106,7 @@ def upper(s: str) -> str:
 
 
 def no_punct(s: str) -> str:
-    """Выбросить всё, что не буква и не цифра."""
+    """Drop everything that is neither a letter nor a digit."""
     return "".join(c for c in s if c.isalnum())
 
 
@@ -119,61 +120,63 @@ def lower_no_punct(s: str) -> str:
 
 
 NORMALIZERS = {
-    "as_is": ("транскрибирую как в эталоне", as_is),
-    "lower": ("привожу всё к нижнему регистру", lower),
-    "upper": ("привожу всё к ВЕРХНЕМУ регистру", upper),
-    "no_punct": ("выбрасываю знаки препинания", no_punct),
-    "lower_no_punct": ("нижний регистр + без знаков", lower_no_punct),
+    "as_is": ("transcribe the way the reference does", as_is),
+    "lower": ("force everything to lowercase", lower),
+    "upper": ("force everything to UPPERCASE", upper),
+    "no_punct": ("drop punctuation", no_punct),
+    "lower_no_punct": ("lowercase, punctuation dropped", lower_no_punct),
 }
 
 
-# --- контрольные случаи ----------------------------------------------------
+# --- control cases ---------------------------------------------------------
 
 CASES = [
-    ("совпадает с эталоном", "PARKING", "PARKING", 0.0),
-    ("одна буква не та", "PARKING", "PARKINH", 1 / 7),
-    ("прочитано верно, но нижним регистром", "PARKING", "parking", 1.0),
-    ("дописал лишнее", "ABC", "ABCDEFGH", 5 / 3),
-    ("не транскрибировал вовсе", "PARKING", "", 1.0),
+    ("identical to the reference", "PARKING", "PARKING", 0.0),
+    ("one letter wrong", "PARKING", "PARKINH", 1 / 7),
+    ("read correctly, written lowercase", "PARKING", "parking", 1.0),
+    ("wrote more than was there", "ABC", "ABCDEFGH", 5 / 3),
+    ("not transcribed at all", "PARKING", "", 1.0),
 ]
 
 
 def _selftest() -> int:
-    print("| случай | эталон | моё | CER | WER |")
+    print("| case | reference | mine | CER | WER |")
     print("|---|---|---|---|---|")
     ok = True
     for name, ref, hyp, expect in CASES:
         got = cer(ref, hyp)
-        print(f"| {name} | `{ref}` | `{hyp or '—'}` | {got:.4f} | {wer(ref, hyp):.4f} |")
+        print(f"| {name} | `{ref}` | `{hyp or '--'}` | {got:.4f} | {wer(ref, hyp):.4f} |")
         if abs(got - expect) > 1e-9:
-            print(f"  ПРОВАЛ: ожидалось {expect:.4f}")
+            print(f"  FAILED: expected {expect:.4f}")
             ok = False
 
     print()
-    print("Третий случай стоит перечитать: каждая буква прочитана правильно,")
-    print("а CER равен ровно 1.000 — как если бы слово не было прочитано вовсе.")
-    print("Регистр для метрики не «мелкая деталь оформления», а семь правок из семи.")
+    print("The third case is worth rereading: every letter was read correctly,")
+    print("and CER is exactly 1.000 -- the same as if the word had never been read.")
+    print("To the metric, case is not cosmetic detail. It is seven edits out of seven.")
     print()
-    print("Четвёртый: CER больше единицы — это не сбой, а нормировка на эталон.")
+    print("The fourth: CER above one is not a failure, it is the reference sitting")
+    print("in the denominator.")
     print()
 
-    # микро против макро на трёх объектах
+    # micro against macro on three objects
     pairs = [("EXIT", "EXIT"), ("A", "B"), ("RESTAURANT", "RESTAURANT")]
     m = corpus_cer(pairs)
-    print("| набор из трёх объектов | значение |")
+    print("| a set of three objects | value |")
     print("|---|---|")
-    print(f"| правок всего | {m['edits']} |")
-    print(f"| символов в эталоне | {m['ref_chars']} |")
-    print(f"| CER микро (правки / все символы) | {m['cer']:.4f} |")
-    print(f"| CER макро (среднее по объектам) | {m['cer_macro']:.4f} |")
+    print(f"| edits in total | {m['edits']} |")
+    print(f"| reference characters | {m['ref_chars']} |")
+    print(f"| CER micro (edits / all characters) | {m['cer']:.4f} |")
+    print(f"| CER macro (mean over objects) | {m['cer_macro']:.4f} |")
     if abs(m["cer"] - 1 / 15) > 1e-9 or abs(m["cer_macro"] - 1 / 3) > 1e-9:
-        print("  ПРОВАЛ: микро должно быть 1/15, макро 1/3")
+        print("  FAILED: micro should be 1/15, macro 1/3")
         ok = False
     print()
-    print("Одна ошибка в однобуквенном объекте: микро даёт 0.0667, макро — 0.3333.")
-    print("Разница в пять раз на пустом месте, поэтому в отчёте пишут, какая взята.")
+    print("One error, and it sits in the one-character object: micro gives 0.0667,")
+    print("macro 0.3333. A factor of five out of nothing, which is why a report")
+    print("says which of the two it quotes.")
     print()
-    print("все контрольные случаи сошлись" if ok else "есть расхождения")
+    print("all control cases match" if ok else "there are discrepancies")
     return 0 if ok else 1
 
 

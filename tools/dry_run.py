@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""Репетиция конвейера до разметки: подставная «своя» разметка (P4e, шаг 5).
+"""Rehearsing the pipeline before annotating: a stand-in "my" annotation.
 
-Час разметки, а потом выясняется, что расчёт падает или отрисовка рисует
-не то, — плохой порядок. Скрипт берёт эталон и портит его известным
-образом, изображая правдоподобного разметчика:
+Spending an hour annotating and only then discovering that the computation
+crashes or the renderer draws the wrong thing is a bad order of work. This
+script takes the ground truth and damages it in known ways, impersonating a
+plausible annotator:
 
-  * дрожь руки — вершины сдвинуты на несколько пикселей;
-  * часть криволинейных объектов обведена четырьмя точками, а не контуром;
-  * часть транскрипций записана нижним регистром;
-  * два читаемых объекта помечены нечитаемыми и один наоборот;
-  * один объект пропущен, один лишний размечен.
+  * a shaky hand -- vertices displaced by a few pixels;
+  * some curved objects outlined with four points instead of a contour;
+  * some transcriptions typed in lowercase;
+  * two legible objects marked illegible and one the other way round;
+  * one object skipped, one spurious object added.
 
-Числа, которые получатся, к твоей работе отношения не имеют. Смысл один:
-убедиться, что конвейер работает и картинки открываются.
+The numbers that come out have nothing to do with my own work. The point is
+only to confirm that the pipeline runs and the images open.
 
     .venv/bin/python tools/dry_run.py --gt data/totaltext/gt \
         --selection data/subset/selection_text.json --out reports/dry_run
@@ -45,32 +46,32 @@ def main() -> int:
     mine: list[TextObject] = []
     flipped = 0
     for n, o in enumerate(gt):
-        if n == 4:                                   # один объект пропущен
+        if n == 4:                                   # one object skipped
             continue
         ring = o.ring
-        if o.ornt == "c" and rnd.random() < 0.4:     # обвёл рамкой вместо контура
+        if o.ornt == "c" and rnd.random() < 0.4:     # boxed instead of outlined
             ring = o.bbox_ring()
         ring = [(x + rnd.gauss(0, args.jitter), y + rnd.gauss(0, args.jitter))
                 for x, y in ring]
         text = o.text
-        if o.legible and rnd.random() < 0.35:        # записал нижним регистром
+        if o.legible and rnd.random() < 0.35:        # typed in lowercase
             text = text.lower()
         if o.legible and flipped < 2 and rnd.random() < 0.1:
-            text = "#"                               # счёл нечитаемым
+            text = "#"                               # judged illegible
             flipped += 1
         elif not o.legible and rnd.random() < 0.15:
-            text = "TEXT"                            # наоборот, вычитал
+            text = "TEXT"                            # the other way: read it out
         mine.append(TextObject(image=o.image, ring=ring, text=text,
                                ident=1000 + n))
 
-    extra = gt[0]                                    # один лишний
+    extra = gt[0]                                    # one spurious object
     mine.append(TextObject(image=extra.image, ident=9001, text="EXTRA",
                            ring=[(x + 400, y + 200) for x, y in extra.ring]))
 
     args.out.mkdir(parents=True, exist_ok=True)
     frames = save_icdar(mine, args.out)
-    print("ЭТО ПОДСТАВНАЯ РАЗМЕТКА, А НЕ ТВОЯ. Числа по ней ничего не значат.")
-    print(f"эталонных объектов {len(gt)}, подставных {len(mine)}, кадров {frames}")
+    print("THIS IS A STAND-IN ANNOTATION, NOT MINE. Its numbers mean nothing.")
+    print(f"reference objects {len(gt)}, stand-in {len(mine)}, frames {frames}")
     print(f"{args.out}")
     return 0
 

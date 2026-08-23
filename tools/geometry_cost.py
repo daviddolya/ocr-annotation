@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Цена геометрии: сколько стоит поленившийся контур (P4e, шаг 3).
+"""The price of geometry: what a lazy contour costs.
 
-Два замера на эталоне, оба про одно — во что обходится решение «обвести
-попроще», принятое при совершенно одинаковой аккуратности.
+Two measurements on the ground truth, both about the same thing -- the cost of
+deciding to "outline it roughly", taken at exactly the same level of care.
 
-  1. ПРЯМОУГОЛЬНИК ВМЕСТО ПОЛИГОНА. Каждый эталонный контур заменяется
-     описанным вокруг него прямоугольником, считается IoU. Разбивка по
-     ориентации текста показывает, где полигон вообще нужен.
-  2. БЮДЖЕТ ВЕРШИН. Из эталонного контура остаётся n вершин, равномерно
-     по кольцу — так выглядит разметчик, кликнувший меньше точек.
+  1. A BOX INSTEAD OF A POLYGON. Every reference contour is replaced by its
+     bounding box and IoU is computed. The breakdown by text orientation shows
+     where a polygon is needed at all.
+  2. THE VERTEX BUDGET. Only n vertices are kept from the reference contour,
+     spaced evenly around the ring -- that is what an annotator who clicked
+     fewer points looks like.
 
     python3 tools/geometry_cost.py --gt data/totaltext/gt \
         --images data/subset/selection_text.json
@@ -26,14 +27,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "common"))
 from icdar import load_totaltext  # noqa: E402
 from polygons import Poly, mask_iou, rasterize  # noqa: E402
 
-ORNT_NAMES = {"h": "горизонтальный", "m": "наклонный",
-              "c": "криволинейный", "#": "нечитаемый", "v": "вертикальный"}
+ORNT_NAMES = {"h": "horizontal", "m": "slanted",
+              "c": "curved", "#": "illegible", "v": "vertical"}
 BUDGETS = (4, 6, 8, 10)
-MAX_SIDE = 1400  # локальная рамка: больше не нужно, а память экономит
+MAX_SIDE = 1400  # local box: anything larger is wasted and costs memory
 
 
 def ring_iou(a: list[tuple[float, float]], b: list[tuple[float, float]]) -> float:
-    """IoU двух контуров в общей локальной рамке — картинка не нужна."""
+    """IoU of two contours inside a shared local box -- no image needed."""
     xs = [p[0] for p in a + b]
     ys = [p[1] for p in a + b]
     x0, y0 = min(xs), min(ys)
@@ -50,7 +51,7 @@ def ring_iou(a: list[tuple[float, float]], b: list[tuple[float, float]]) -> floa
 
 
 def subsample(ring: list, n: int) -> list:
-    """Оставить n вершин, равномерно по кольцу."""
+    """Keep n vertices, spaced evenly around the ring."""
     if n >= len(ring):
         return list(ring)
     step = len(ring) / n
@@ -68,14 +69,14 @@ def main() -> int:
     if args.images:
         images = set(json.loads(args.images.read_text(encoding="utf-8"))["files"])
     objs = [o for o in load_totaltext(args.gt, images=images) if o.vertices >= 4]
-    print(f"объектов с четырьмя и более вершинами: {len(objs)}")
+    print(f"objects with four or more vertices: {len(objs)}")
 
     groups = defaultdict(list)
     for o in objs:
         groups[o.ornt].append(ring_iou(o.ring, o.bbox_ring()))
     print()
-    print("ПРЯМОУГОЛЬНИК ВМЕСТО ПОЛИГОНА")
-    print("| ориентация текста | объектов | средний IoU | медиана |")
+    print("A BOX INSTEAD OF A POLYGON")
+    print("| text orientation | objects | mean IoU | median |")
     print("|---|---|---|---|")
     for key in ("h", "m", "c", "#"):
         v = groups.get(key, [])
@@ -83,22 +84,22 @@ def main() -> int:
             print(f"| {ORNT_NAMES[key]} | {len(v)} | {statistics.mean(v):.3f} | "
                   f"{statistics.median(v):.3f} |")
     allv = [x for v in groups.values() for x in v]
-    print(f"| всё вместе | {len(allv)} | {statistics.mean(allv):.3f} | "
+    print(f"| everything | {len(allv)} | {statistics.mean(allv):.3f} | "
           f"{statistics.median(allv):.3f} |")
 
     many = [o for o in objs if o.vertices >= args.min_vertices_for_budget]
     print()
-    print("БЮДЖЕТ ВЕРШИН: оставляем n точек из эталонного контура")
-    print(f"(считается на {len(many)} объектах, у которых в эталоне "
-          f"{args.min_vertices_for_budget}+ вершин)")
+    print("THE VERTEX BUDGET: keeping n points of the reference contour")
+    print(f"(computed over {len(many)} objects whose reference contour has "
+          f"{args.min_vertices_for_budget}+ vertices)")
     if len(many) < 30:
-        print(f"ВНИМАНИЕ: объектов всего {len(many)} — на такой выборке таблица ниже")
-        print("ничего не значит. Кривизна и число вершин — свойство ДАТАСЕТА,")
-        print("а не твоего набора: запусти эту команду без --images.")
+        print(f"WARNING: only {len(many)} objects -- on a sample that small the table")
+        print("below means nothing. Curvature and vertex counts are a property of the")
+        print("DATASET, not of my subset: run this command without --images.")
     if not many:
-        print("таких объектов в наборе нет — таблица пропущена")
+        print("no such objects in this set -- table skipped")
         return 0
-    print("| вершин оставлено | средний IoU | медиана | доля объектов IoU < 0.8 |")
+    print("| vertices kept | mean IoU | median | share of objects with IoU < 0.8 |")
     print("|---|---|---|---|")
     for n in BUDGETS:
         v = [ring_iou(o.ring, subsample(o.ring, n)) for o in many]

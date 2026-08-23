@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""Растеризация полигонов и метрики масок.
+"""Polygon rasterisation and mask metrics.
 
-ПРОИСХОЖДЕНИЕ: перенесено из polygon-annotation-agreement/common/polygons.py
-(этап A2, P4b) — код написан там и здесь не переписывался. Импортировать
-через границу репозиториев нельзя, копия с указанием источника честнее
-молчаливого переписывания (правило зонтика P4_annotation_portfolio).
+PROVENANCE: ported from polygon-annotation-agreement/common/polygons.py
+(stage A2) -- the code was written there and has not been rewritten here.
+Importing across repository boundaries is not an option, and a copy that
+names its source is more honest than a silent rewrite.
 
-Что взято: Poly, rasterize, mask_iou, dice, boundary_band, boundary_iou,
-boundary_distance, match_polys — всё, что не зависит от формата данных.
-Что НЕ взято: load_coco_polygons и список классов COCO. Здесь другой
-формат и другой предмет: объект — не «человек» или «машина», а слово,
-и читается он из Total-Text или из экспорта ICDAR (см. icdar.py).
+What was taken: Poly, rasterize, mask_iou, dice, boundary_band, boundary_iou,
+boundary_distance, match_polys -- everything that does not depend on the data
+format. What was NOT taken: load_coco_polygons and the COCO class list. The
+format and the subject differ here: an object is not a "person" or a "car" but
+a word, and it is read from Total-Text or from an ICDAR export (see icdar.py).
 
-Растеризация делается через PIL, эрозия — MinFilter, так что scipy не нужен.
+Rasterisation goes through PIL and erosion through MinFilter, so scipy is not
+needed.
 """
 
 import numpy as np
@@ -22,11 +23,11 @@ from PIL import Image, ImageDraw, ImageFilter
 
 @dataclass
 class Poly:
-    """Один объект: подпись и один или несколько контуров.
+    """One object: a label and one or more contours.
 
-    Контур — плоский список [x1, y1, x2, y2, ...] в абсолютных пикселях.
-    Поле cls в A2 держало класс объекта; здесь в него кладётся транскрипция,
-    чтобы сопоставление и разбор работали тем же кодом.
+    A contour is a flat list [x1, y1, x2, y2, ...] in absolute pixels. In A2
+    the cls field held the object class; here it holds the transcription, so
+    that matching and analysis run on the same code.
     """
     cls: str
     parts: list[list[float]]
@@ -45,7 +46,7 @@ class Poly:
 
 
 def rasterize(poly: Poly, width: int, height: int) -> np.ndarray:
-    """Контуры -> булева маска. Несколько частей объединяются в одну маску."""
+    """Contours -> boolean mask. Several parts merge into a single mask."""
     canvas = Image.new("1", (width, height), 0)
     draw = ImageDraw.Draw(canvas)
     for part in poly.parts:
@@ -64,17 +65,18 @@ def mask_iou(a: np.ndarray, b: np.ndarray) -> float:
 
 
 def dice(a: np.ndarray, b: np.ndarray) -> float:
-    """Dice = 2·IoU/(1+IoU). Считается напрямую, чтобы не тащить деление дважды."""
+    """Dice = 2*IoU/(1+IoU), computed directly to avoid dividing twice."""
     inter = np.count_nonzero(a & b)
     total = np.count_nonzero(a) + np.count_nonzero(b)
     return 2 * inter / total if total else 0.0
 
 
 def boundary_band(mask: np.ndarray, distance: int) -> np.ndarray:
-    """Полоса шириной distance внутри границы маски: mask минус эрозия.
+    """A band of the given width inside the mask boundary: mask minus erosion.
 
-    Эрозия — MinFilter квадратом (2·distance+1). Для оценки границы этого
-    достаточно; круглый элемент дал бы отличие в единицы пикселей.
+    Erosion is a MinFilter over a square of (2*distance+1). That is accurate
+    enough for a boundary estimate; a circular element would differ by a few
+    pixels.
     """
     if distance < 1:
         return mask
@@ -85,27 +87,27 @@ def boundary_band(mask: np.ndarray, distance: int) -> np.ndarray:
 
 
 def boundary_iou(a: np.ndarray, b: np.ndarray, distance: int) -> float:
-    """Boundary IoU (arXiv:2103.16562): IoU, посчитанный только в полосе границы.
+    """Boundary IoU (arXiv:2103.16562): IoU computed inside the boundary band.
 
-    В отличие от mask IoU одинаково строг к крупным и мелким объектам:
-    сдвиг контура на несколько пикселей роняет его и там, и там.
+    Unlike mask IoU it is equally strict on large and small objects: a contour
+    shifted by a few pixels drags it down in both cases.
     """
     return mask_iou(boundary_band(a, distance), boundary_band(b, distance))
 
 
 def boundary_distance(width: int, height: int, ratio: float = 0.02) -> int:
-    """Ширина полосы границы — доля диагонали кадра, как в статье."""
+    """Boundary band width as a fraction of the frame diagonal, as in the paper."""
     return max(1, round(ratio * (width ** 2 + height ** 2) ** 0.5))
 
 
 
 def match_polys(mine: list[Poly], ref: list[Poly], masks_mine: list[np.ndarray],
                 masks_ref: list[np.ndarray], iou_threshold: float):
-    """Жадное сопоставление по убыванию mask IoU, БЕЗ учёта класса.
+    """Greedy matching by descending mask IoU, IGNORING the label.
 
-    Тот же принцип, что в agreement.py для боксов: если требовать совпадения
-    метки, ошибка класса распадётся на пропуск и лишний объект сразу,
-    и согласие по классам считать будет не на чем.
+    Same principle as agreement.py for boxes: if a label match were required,
+    a class error would immediately split into a miss plus a spurious object,
+    and there would be nothing left to measure class agreement on.
     """
     candidates = sorted(
         ((mask_iou(masks_mine[i], masks_ref[j]), i, j)

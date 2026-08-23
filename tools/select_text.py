@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""Отбор кадров под разметку текста и загрузка картинок (P4e, шаг 0).
+"""Selecting frames for text annotation and downloading the images.
 
-Кадр берётся, если выполняются три условия, и у каждого есть причина:
+A frame is taken if three conditions hold, and each has a reason:
 
-  1. ПЯТЬ–ДЕВЯТЬ ОБЪЕКТОВ. В наборе есть кадры с одним словом и кадры
-     с полусотней. Первые не проверяют сопоставление, вторые — это час
-     работы на кадр, причём эталон в такой каше сам размечает через раз.
-  2. ЕСТЬ КРИВОЛИНЕЙНЫЙ ТЕКСТ. Ради него Total-Text и выбран: на прямых
-     вывесках полигон почти не отличается от прямоугольника, и половина
-     содержания этапа исчезает.
-  3. НЕЧИТАЕМЫХ НЕ БОЛЬШЕ ПОЛОВИНЫ. Кадр, где эталон почти всё пометил
-     как «#», не даёт ни транскрипций, ни осмысленного согласия.
+  1. FIVE TO NINE OBJECTS. The dataset holds frames with a single word and
+     frames with fifty. The first kind never tests matching; the second is an
+     hour of work per frame, and in that kind of clutter the ground truth
+     itself annotates only every other object.
+  2. CURVED TEXT PRESENT. That is why Total-Text was chosen at all: on
+     straight signage a polygon barely differs from a rectangle, and half the
+     substance of this stage disappears.
+  3. NO MORE THAN HALF ILLEGIBLE. A frame where the reference marked almost
+     everything as "#" yields neither transcriptions nor meaningful agreement.
 
-Что в кадрах написано и сколько там объектов — НЕ печатается: разметка
-идёт вслепую. Распределение показывает --stats, и запускать его следует
-после разметки.
+What the frames say and how many objects they hold is NOT printed: the
+annotation is done blind. The distribution is available under --stats, which
+should be run after annotating.
 
     python3 select_text.py --gt data/totaltext/gt --out data/subset --count 10
 """
@@ -48,9 +49,9 @@ def fetch(url: str, dest: Path, attempts: int = 4) -> int:
                 dest.unlink()
             if attempt == attempts:
                 raise
-            print(f"  {dest.name}: попытка {attempt} сорвалась ({e})")
+            print(f"  {dest.name}: attempt {attempt} failed ({e})")
             time.sleep(2 * attempt)
-    raise RuntimeError("недостижимо")
+    raise RuntimeError("unreachable")
 
 
 def main() -> int:
@@ -62,12 +63,12 @@ def main() -> int:
     ap.add_argument("--max-objects", type=int, default=9)
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--stats", action="store_true",
-                    help="эталонное распределение — смотреть ПОСЛЕ разметки")
+                    help="the reference distribution -- look AFTER annotating")
     args = ap.parse_args()
 
     objs = load_totaltext(args.gt)
     if not objs:
-        raise SystemExit(f"в {args.gt} не нашлось poly_gt_*.txt")
+        raise SystemExit(f"no poly_gt_*.txt found in {args.gt}")
     grouped = by_image(objs)
 
     def suitable(items) -> bool:
@@ -80,7 +81,7 @@ def main() -> int:
 
     pool = sorted(k for k, v in grouped.items() if suitable(v))
     if len(pool) < args.count:
-        raise SystemExit(f"кандидатов всего {len(pool)}, просили {args.count}")
+        raise SystemExit(f"only {len(pool)} candidates, {args.count} requested")
 
     rnd = random.Random(args.seed)
     shuffled = list(pool)
@@ -95,10 +96,10 @@ def main() -> int:
         total += dest.stat().st_size if dest.exists() else fetch(IMAGES + name, dest)
 
     manifest = {
-        "source": f"Total-Text, тестовая часть, зеркало {REPO}",
-        "task": "полигон по границе слова плюс транскрипция в атрибуте",
+        "source": f"Total-Text, test split, mirror {REPO}",
+        "task": "a polygon around the word plus a transcription in an attribute",
         "filters": {"objects_per_frame": [args.min_objects, args.max_objects],
-                    "needs_curved": True, "illegible_at_most": "половина"},
+                    "needs_curved": True, "illegible_at_most": "half"},
         "seed": args.seed,
         "count": len(picked),
         "files": picked,
@@ -106,21 +107,21 @@ def main() -> int:
     (args.out / "selection_text.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    print(f"кандидатов {len(pool)}, отобрано кадров {len(picked)}, {total / 1e6:.2f} МБ")
-    print(f"кадры: {frames}")
-    print(f"манифест: {args.out / 'selection_text.json'}")
+    print(f"candidates {len(pool)}, frames selected {len(picked)}, {total / 1e6:.2f} MB")
+    print(f"frames: {frames}")
+    print(f"manifest: {args.out / 'selection_text.json'}")
 
     if args.stats:
         items = [o for k in picked for o in grouped[k]]
         legible = [o for o in items if o.legible]
         orn = Counter(o.ornt for o in items)
         print()
-        print(f"[stats] объектов {len(items)}, читаемых {len(legible)}, "
-              f"по {len(items) / len(picked):.1f} на кадр")
-        print(f"[stats] вершин {sum(o.vertices for o in items)}, "
-              f"символов {sum(len(o.text) for o in legible)}")
-        print(f"[stats] ориентации: криволинейных {orn['c']}, горизонтальных "
-              f"{orn['h']}, наклонных {orn['m']}, нечитаемых {orn['#']}")
+        print(f"[stats] objects {len(items)}, legible {len(legible)}, "
+              f"{len(items) / len(picked):.1f} per frame")
+        print(f"[stats] vertices {sum(o.vertices for o in items)}, "
+              f"characters {sum(len(o.text) for o in legible)}")
+        print(f"[stats] orientation: curved {orn['c']}, horizontal "
+              f"{orn['h']}, slanted {orn['m']}, illegible {orn['#']}")
     return 0
 
 

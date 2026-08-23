@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Отрисовка расхождений по тексту (P4e, оснастка к шагу 6).
+"""Rendering the disagreements (support tooling for stage 6).
 
-«IoU 0.50, CER 1.00» не говорит ничего, пока не видно, что именно
-разошлось: контур обведён рамкой, слово разбито надвое или прочитано
-верно, но записано иначе. Три вещи, каждая отвечает на свой вопрос.
+"IoU 0.50, CER 1.00" says nothing until you can see what actually diverged:
+a contour drawn as a box, a word split in two, or a word read correctly and
+written by another rule. Three outputs, each answering its own question.
 
-    пары        вырезка вокруг слова с обоими контурами. Синий — эталон,
-                оранжевый — твой. Подпись: обе транскрипции, IoU и CER
-    ориентации  столбики среднего IoU по ориентации эталонного текста
-    оси         точечная диаграмма: IoU по горизонтали, CER по вертикали,
-                точка на пару. Сразу видно, что даёт расхождения —
-                геометрия, текст или обе оси сразу
+    pairs        a crop around the word with both contours. Blue is the
+                 reference, orange is mine. Caption: both transcriptions,
+                 IoU and CER
+    orientation  bars of mean IoU by the orientation of the reference text
+    axes         a scatter plot: IoU horizontally, CER vertically, one point
+                 per pair. It shows at a glance what drives the disagreement
+                 -- geometry, text, or both at once
 
     .venv/bin/python tools/render_text.py --metrics reports/ocr_metrics.json \
         --images data/subset/frames --gt data/totaltext/gt --mine annotation/my_labels \
@@ -44,7 +45,7 @@ FONT_CANDIDATES = [
 
 
 def load_font(size: int) -> tuple[object, bool]:
-    """Возвращает (шрифт, поддерживает ли кириллицу)."""
+    """Returns (font, whether a TrueType face was found)."""
     for path in FONT_CANDIDATES:
         if Path(path).exists():
             try:
@@ -55,7 +56,7 @@ def load_font(size: int) -> tuple[object, bool]:
 
 
 def render_pair(image_path: Path, ref, mine, iou, cer, out: Path, font,
-                cyrillic: bool, target: int = 560) -> None:
+                truetype: bool, target: int = 560) -> None:
     img = Image.open(image_path).convert("RGB")
     xs = [p[0] for p in ref.ring + mine.ring]
     ys = [p[1] for p in ref.ring + mine.ring]
@@ -81,28 +82,28 @@ def render_pair(image_path: Path, ref, mine, iou, cer, out: Path, font,
         for px, py in pts:
             d.ellipse([px - 3, py - 3, px + 3, py + 3], fill=color)
     cer_text = "—" if cer is None else f"{cer:.2f}"
-    line1 = f"IoU {iou:.3f}   CER {cer_text}   вершин {ref.vertices}/{mine.vertices}" \
-        if cyrillic else f"IoU {iou:.3f}  CER {cer_text}"
+    line1 = (f"IoU {iou:.3f}   CER {cer_text}   "
+             f"vertices {ref.vertices}/{mine.vertices}")
     d.text((6, 5), line1, fill=(20, 20, 20), font=font)
-    d.text((6, 25), f"«{ref.text}»", fill=REF_COLOR, font=font)
-    w = d.textlength(f"«{ref.text}»", font=font)
-    d.text((16 + w, 25), f"«{mine.text}»", fill=MY_COLOR, font=font)
+    d.text((6, 25), f'"{ref.text}"', fill=REF_COLOR, font=font)
+    w = d.textlength(f'"{ref.text}"', font=font)
+    d.text((16 + w, 25), f'"{mine.text}"', fill=MY_COLOR, font=font)
     canvas.save(out, quality=92)
 
 
-def render_orientation(metrics: dict, out: Path, font, cyrillic: bool) -> None:
+def render_orientation(metrics: dict, out: Path, font, truetype: bool) -> None:
     rows = [(k, v["pairs"], v["iou"])
             for k, v in metrics["iou_by_orientation"].items() if v["pairs"]]
     rows.sort(key=lambda r: r[2])
     w, row_h, left = 620, 30, 190
     img = Image.new("RGB", (w, row_h * len(rows) + 46), (255, 255, 255))
     d = ImageDraw.Draw(img)
-    d.text((10, 10), "средний mask IoU по ориентации текста" if cyrillic
-           else "mean mask IoU by text orientation", fill=(20, 20, 20), font=font)
+    d.text((10, 10), "mean mask IoU by text orientation",
+           fill=(20, 20, 20), font=font)
     bar_w = w - left - 96
     for k, (name, pairs, iou) in enumerate(rows):
         y = 42 + k * row_h
-        d.text((10, y + 5), name if cyrillic else name[:12], fill=(40, 40, 40), font=font)
+        d.text((10, y + 5), name, fill=(40, 40, 40), font=font)
         d.rectangle([left, y + 5, left + bar_w, y + 21], fill=(235, 235, 235))
         d.rectangle([left, y + 5, left + bar_w * iou, y + 21],
                     fill=OK if iou >= 0.75 else BAD)
@@ -111,14 +112,13 @@ def render_orientation(metrics: dict, out: Path, font, cyrillic: bool) -> None:
     img.save(out)
 
 
-def render_axes(metrics: dict, out: Path, font, cyrillic: bool) -> None:
-    """Точечная диаграмма: геометрия против текста."""
+def render_axes(metrics: dict, out: Path, font, truetype: bool) -> None:
+    """Scatter plot: geometry against text."""
     pts = [(p["iou"], p["cer"]) for p in metrics["pairs"] if p["cer"] is not None]
     size, pad, top = 460, 62, 52
     img = Image.new("RGB", (size + pad + 24, size + top + 44), (255, 255, 255))
     d = ImageDraw.Draw(img)
-    d.text((10, 8), "геометрия против текста" if cyrillic
-           else "geometry vs text", fill=(20, 20, 20), font=font)
+    d.text((10, 8), "geometry vs text", fill=(20, 20, 20), font=font)
     d.text((6, 28), "CER", fill=(60, 60, 60), font=font)
     d.rectangle([pad, top, pad + size, top + size], outline=(200, 200, 200))
     cer_max = max([c for _, c in pts] + [1.0])
@@ -147,7 +147,7 @@ def main() -> int:
     ap.add_argument("--images", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--worst", type=int, default=4,
-                    help="сколько худших взять по каждой оси")
+                    help="how many worst cases to take on each axis")
     args = ap.parse_args()
 
     metrics = json.loads(args.metrics.read_text(encoding="utf-8"))
@@ -155,9 +155,9 @@ def main() -> int:
     mine = {(o.image, o.ident): o for o in load_cvat_icdar(args.mine)}
 
     args.out.mkdir(parents=True, exist_ok=True)
-    font, cyrillic = load_font(16)
-    if not cyrillic:
-        print("TrueType-шрифт не найден: подписи будут латиницей")
+    font, truetype = load_font(16)
+    if not truetype:
+        print("no TrueType face found: captions fall back to the bitmap font")
 
     chosen, seen = [], set()
     for source, key in (("geometry", "worst_geometry"), ("text", "worst_text")):
@@ -180,18 +180,18 @@ def main() -> int:
             continue
         name = f"{k:02d}_{source}_{Path(item['image']).stem}_{item['gt_id']}.jpg"
         render_pair(args.images / item["image"], ref, my, pair["iou"], pair["cer"],
-                    args.out / name, font, cyrillic)
+                    args.out / name, font, truetype)
         made.append({"file": name, "source": source, "image": item["image"],
                      "gt_id": item["gt_id"], "iou": pair["iou"], "cer": pair["cer"],
                      "gt_text": ref.text, "my_text": my.text})
 
-    render_orientation(metrics, args.out / "iou_by_orientation.png", font, cyrillic)
-    render_axes(metrics, args.out / "geometry_vs_text.png", font, cyrillic)
+    render_orientation(metrics, args.out / "iou_by_orientation.png", font, truetype)
+    render_axes(metrics, args.out / "geometry_vs_text.png", font, truetype)
     (args.out / "pairs_manifest.json").write_text(
         json.dumps(made, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"пар отрисовано {len(made)}, плюс iou_by_orientation.png "
-          "и geometry_vs_text.png")
-    print(f"каталог: {args.out}")
+    print(f"pairs rendered {len(made)}, plus iou_by_orientation.png "
+          "and geometry_vs_text.png")
+    print(f"directory: {args.out}")
     return 0
 
 

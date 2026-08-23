@@ -1,29 +1,32 @@
 #!/usr/bin/env python3
-"""Формат текстовых полигонов: эталон Total-Text и экспорт CVAT (P4e).
+"""Text-polygon formats: the Total-Text ground truth and the CVAT export.
 
-Два формата, и они почти зеркальны — поэтому загрузчик один.
+Two formats, and they nearly mirror each other -- hence a single loader.
 
-ЭТАЛОН Total-Text, файл на кадр `poly_gt_<image>.txt`, строка на объект:
+TOTAL-TEXT GROUND TRUTH, one file per frame `poly_gt_<image>.txt`, one line
+per object:
 
     x: [[206 251 386]], y: [[633 811 931]], ornt: [u'c'], transcriptions: [u'PETROSAINS']
 
-Координаты бывают перенесены на несколько строк — читать построчно нельзя,
-записи склеиваются до полной. На наивном разборе теряется 11 строк из 2547.
-Поле `ornt` — ориентация текста: c кривой, h горизонтальный, m наклонный,
-# нечитаемый. Поле `transcriptions` со значением `#` означает «прочитать
-нельзя»; таких в тестовом наборе 332 из 2547.
+Coordinates are sometimes wrapped over several lines, so reading line by line
+does not work: records are joined until complete. A naive parser loses 11
+records out of 2547. The `ornt` field is text orientation -- c curved,
+h horizontal, m multi-oriented (slanted), # illegible. A `transcriptions`
+value of `#` means "cannot be read"; the test split holds 332 of those
+out of 2547.
 
-ЭКСПОРТ CVAT, формат ICDAR Text Localization 1.0, файл на кадр
-`gt_<image>.txt`, строка на объект:
+CVAT EXPORT, format ICDAR Text Localization 1.0, one file per frame
+`gt_<image>.txt`, one line per object:
 
     206,633,251,811,386,931,"PETROSAINS"
 
-Проверено по исходнику datumaro (plugins/data_formats/icdar/exporter.py,
-IcdarTextLocalizationExporter): координаты через запятую, дальше в кавычках
-значение атрибута с именем ровно `text`. Ориентации там нет — она есть
-только у эталона, и разбивка по ней делается по эталонной стороне пары.
+Verified against the datumaro source (plugins/data_formats/icdar/exporter.py,
+IcdarTextLocalizationExporter): comma-separated coordinates, then the value of
+the attribute named exactly `text` in quotes. There is no orientation there --
+only the ground truth carries it, so any breakdown by orientation is taken
+from the reference side of a pair.
 
-Зависимостей нет.
+No dependencies.
 """
 
 import argparse
@@ -31,8 +34,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Общепринятые пометки «прочитать нельзя»: Total-Text ставит '#',
-# датасеты ICDAR — '###'. Принимаем обе, чтобы не спорить о числе решёток.
+# The conventional "cannot be read" markers: Total-Text writes '#', the ICDAR
+# datasets write '###'. Both are accepted so the hash count is never an issue.
 ILLEGIBLE = {"#", "##", "###"}
 
 _HEAD = re.compile(r"^x:\s*\[\[")
@@ -44,18 +47,18 @@ _QUOTED = re.compile(r"^u?['\"](.*)['\"]$", re.S)
 
 @dataclass
 class TextObject:
-    """Один текстовый объект: контур плюс транскрипция."""
+    """One text object: a contour plus a transcription."""
 
     image: str
     ring: list[tuple[float, float]]
     text: str
-    ornt: str = ""                      # только у эталона
+    ornt: str = ""                      # ground truth only
     ident: int = 0
     attrs: dict = field(default_factory=dict)
 
     @property
     def legible(self) -> bool:
-        """Читаемо ли — по мнению того, кто размечал."""
+        """Legible in the judgement of whoever annotated it."""
         return bool(self.text) and self.text not in ILLEGIBLE
 
     @property
@@ -68,7 +71,8 @@ class TextObject:
         return min(xs), min(ys), max(xs), max(ys)
 
     def bbox_ring(self) -> list[tuple[float, float]]:
-        """Описанный прямоугольник как контур — для замера «цены прямоугольника»."""
+        """The bounding box as a contour -- used to price "a box instead of a
+        polygon"."""
         x0, y0, x1, y1 = self.bbox()
         return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
 
@@ -100,7 +104,7 @@ def parse_totaltext_file(path: Path, image: str) -> list[TextObject]:
         xs = [float(v) for v in m.group(1).split()]
         ys = [float(v) for v in m.group(2).split()]
         if len(xs) != len(ys):
-            raise ValueError(f"{path}: {len(xs)} иксов против {len(ys)} игреков")
+            raise ValueError(f"{path}: {len(xs)} x values against {len(ys)} y values")
         out.append(TextObject(image=image, ring=list(zip(xs, ys)),
                               text=_unquote(m.group(4)), ornt=_unquote(m.group(3)),
                               ident=len(out) + 1))
@@ -143,7 +147,7 @@ def parse_icdar_file(path: Path, image: str) -> list[TextObject]:
 
 def load_cvat_icdar(directory: str | Path, images: set[str] | None = None
                     ) -> list[TextObject]:
-    """Экспорт лежит либо плоско, либо в подкаталоге подмножества."""
+    """The export sits either flat or inside a subset subdirectory."""
     root = Path(directory)
     files = sorted(root.rglob("gt_*.txt"))
     out: list[TextObject] = []
@@ -159,8 +163,8 @@ def load_cvat_icdar(directory: str | Path, images: set[str] | None = None
 
 def load_any(directory: str | Path, images: set[str] | None = None
              ) -> list[TextObject]:
-    """Определяет формат по именам файлов. Эталон и экспорт различаются
-    префиксом: poly_gt_ против gt_."""
+    """Detects the format from the file names. Ground truth and export differ
+    by prefix: poly_gt_ against gt_."""
     root = Path(directory)
     if any(root.rglob("poly_gt_*.txt")):
         return load_totaltext(root, images)
@@ -168,7 +172,7 @@ def load_any(directory: str | Path, images: set[str] | None = None
 
 
 def save_icdar(objs: list[TextObject], directory: str | Path) -> int:
-    """Пишет в формате экспорта CVAT. Нужно для репетиции конвейера."""
+    """Writes in the CVAT export format. Needed for the pipeline rehearsal."""
     root = Path(directory)
     root.mkdir(parents=True, exist_ok=True)
     grouped = by_image(objs)
@@ -190,15 +194,15 @@ def by_image(objs: list[TextObject]) -> dict[str, list[TextObject]]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Что лежит в каталоге разметки")
+    ap = argparse.ArgumentParser(description="What is in an annotation directory")
     ap.add_argument("directory", type=Path)
     args = ap.parse_args()
     objs = load_any(args.directory)
     legible = [o for o in objs if o.legible]
-    print(f"кадров {len(by_image(objs))}, объектов {len(objs)}, "
-          f"читаемых {len(legible)}, нечитаемых {len(objs) - len(legible)}")
-    print(f"вершин всего {sum(o.vertices for o in objs)}, "
-          f"символов в транскрипциях {sum(len(o.text) for o in legible)}")
+    print(f"frames {len(by_image(objs))}, objects {len(objs)}, "
+          f"legible {len(legible)}, illegible {len(objs) - len(legible)}")
+    print(f"vertices in total {sum(o.vertices for o in objs)}, "
+          f"characters in transcriptions {sum(len(o.text) for o in legible)}")
     return 0
 
 

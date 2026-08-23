@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Сборка README из метрик и разбора пар (P4e, шаг 6).
+"""Assembling the README from the metrics and the pair review.
 
-Приём перенесён из A2, A3 и A4 и работает так же: числа генерируются из
-reports/ocr_metrics.json, а твои комментарии сохраняются. Текст между
-маркерами <!-- note:ключ --> и <!-- /note --> вычитывается из существующего
-README и переносится в новый, поэтому пересборка ничего не затирает.
+The technique is carried over from A2, A3 and A4 and works the same way: the
+numbers are generated from reports/ocr_metrics.json, while my own commentary
+survives. Text between the markers <!-- note:key --> and <!-- /note --> is read
+out of the existing README and carried into the new one, so a rebuild never
+overwrites anything written by hand.
 
-Единица раздела здесь — ПАРА «эталонное слово — моё слово», и у каждой
-подписаны обе оси: IoU и CER. Смысл именно в том, чтобы они стояли рядом.
+The unit of a section here is a PAIR -- a reference word against my word -- and
+both axes are quoted for each: IoU and CER. The whole point is that they stand
+side by side.
 
     .venv/bin/python tools/build_readme.py
 """
@@ -17,7 +19,7 @@ import json
 import re
 from pathlib import Path
 
-PLACEHOLDER = "> **Что здесь произошло:** _заполнить_"
+PLACEHOLDER = "> **What happened here:** _to be filled in_"
 NOTE_RE = re.compile(r"<!-- note:(?P<key>[^\s>]+) -->\n(?P<body>.*?)\n<!-- /note -->",
                      re.DOTALL)
 
@@ -27,6 +29,11 @@ def existing_notes(path: Path) -> dict[str, str]:
         return {}
     return {m.group("key"): m.group("body").strip()
             for m in NOTE_RE.finditer(path.read_text(encoding="utf-8"))}
+
+
+def load_manifest(path: Path) -> list[dict]:
+    return (json.loads(path.read_text(encoding="utf-8"))
+            if path.exists() else [])
 
 
 def main() -> int:
@@ -41,108 +48,128 @@ def main() -> int:
     m = json.loads(a.metrics.read_text(encoding="utf-8"))
     notes = existing_notes(a.readme)
     review = Path(a.review)
-    manifest = review / "pairs_manifest.json"
-    pairs = (json.loads(manifest.read_text(encoding="utf-8"))
-             if manifest.exists() else [])
+    pairs = load_manifest(review / "pairs_manifest.json")
+    splits = load_manifest(review / "split" / "split_manifest.json")
 
     out = [f"# {a.repo}", "",
-           "Согласованность разметки текста в сцене: полигон по границе слова",
-           "плюс транскрипция. Каждый объект размечен дважды по сути, и метрики",
-           f"тоже две, разной природы. {m['frames']} кадров Total-Text размечены вручную",
-           "вслепую от эталона.",
-           "Этап A5 портфолио по контролю качества разметки.", "",
+           "Annotation agreement on scene text: a polygon around the word plus a",
+           "transcription. Every object is annotated twice over in effect, so there",
+           f"are two metrics of different natures. {m['frames']} Total-Text frames were",
+           "annotated by hand, blind to the ground truth.",
+           "Stage A5 of an annotation-quality portfolio.", "",
            "<!-- note:intro -->", notes.get("intro", PLACEHOLDER), "<!-- /note -->", "",
-           "## Результат", "", "| | |", "|---|---|",
-           f"| кадров | {m['frames']} |",
-           f"| объектов своих / эталонных | {m['my_objects']} / {m['gt_objects']} |",
-           f"| сопоставлено пар | {m['matched']} |",
-           f"| **mask IoU на парах** | **{m['iou_mean']:.3f}** |",
+           "## Result", "", "| | |", "|---|---|",
+           f"| frames | {m['frames']} |",
+           f"| objects, mine / reference | {m['my_objects']} / {m['gt_objects']} |",
+           f"| pairs matched | {m['matched']} |",
+           f"| **mask IoU over pairs** | **{m['iou_mean']:.3f}** |",
            f"| **CER** | **{m['cer']:.3f}** |",
            f"| WER | {m['wer']:.3f} |",
-           f"| совпало дословно | {m['exact_matches']} из {m['text_pairs']} |",
-           f"| согласие по «читаемо / нечитаемо» | {m['legibility_agreement']:.3f} |",
-           f"| каппа Коэна по читаемости | {m['legibility_kappa']:.3f} |", "",
-           f"Порог сопоставления — mask IoU {m['iou_threshold']}. Средний IoU считается",
-           "только по сопоставленным парам, поэтому рядом обязана стоять строка",
-           f"«без пары»: эталонных {m['unmatched_gt']}, своих {m['unmatched_mine']}. "
-           "Объект, обведённый совсем",
-           "мимо, в пару не попадает и средний IoU не портит — он уходит туда.", ""]
+           f"| exact matches | {m['exact_matches']} of {m['text_pairs']} |",
+           f"| agreement on legible / illegible | {m['legibility_agreement']:.3f} |",
+           f"| Cohen's kappa on legibility | {m['legibility_kappa']:.3f} |", "",
+           f"The matching threshold is mask IoU {m['iou_threshold']}. Mean IoU is computed",
+           "only over matched pairs, which is why the unmatched counts have to stand",
+           f"next to it: {m['unmatched_gt']} reference objects and {m['unmatched_mine']} of mine. "
+           "A word drawn completely",
+           "off target never enters a pair and never hurts the mean -- it lands there.", ""]
 
-    out += ["## Геометрия или текст", "",
-            "Главный вопрос этапа. Две оси меряют разное, и усреднять их в одно",
-            "число нельзя: контур чинится правилом о границах, транскрипция —",
-            "правилом о регистре и пунктуации.", ""]
+    out += ["## Geometry or text", "",
+            "The central question of the stage. The two axes measure different things",
+            "and cannot be averaged into one number: a contour is fixed by a rule about",
+            "boundaries, a transcription by a rule about case and punctuation.", ""]
     if m.get("iou_by_orientation"):
-        out += ["| ориентация эталонного текста | пар | средний IoU |", "|---|---|---|"]
+        out += ["| orientation of the reference text | pairs | mean IoU |", "|---|---|---|"]
         for name, v in sorted(m["iou_by_orientation"].items(), key=lambda kv: kv[1]["iou"]):
             out.append(f"| {name} | {v['pairs']} | {v['iou']:.3f} |")
         out.append("")
     if (review / "iou_by_orientation.png").exists():
-        out += [f"![IoU по ориентациям]({a.review}/iou_by_orientation.png)", ""]
+        out += [f"![IoU by orientation]({a.review}/iou_by_orientation.png)", ""]
     if (review / "geometry_vs_text.png").exists():
-        out += ["Точка на пару: по горизонтали геометрия, по вертикали текст.",
-                "Расхождения, собравшиеся у одной оси, — это разные проблемы",
-                "с разными лечениями.", "",
-                f"![геометрия против текста]({a.review}/geometry_vs_text.png)", ""]
+        out += ["One point per pair: geometry along the horizontal axis, text along the",
+                "vertical. Disagreements that pile up against one axis are a different",
+                "problem with a different cure.", "",
+                f"![geometry vs text]({a.review}/geometry_vs_text.png)", ""]
 
-    out += ["## Сколько ошибки объясняется конвенцией", "",
-            f"CER как есть — **{m['cer']:.3f}**. Тот же расчёт после приведения обеих",
-            f"сторон к нижнему регистру — **{m['cer_case_insensitive']:.3f}**. Разница и есть та часть",
-            "ошибки, которая объясняется правилом записи, а не чтением: "
+    out += ["## How much of the error is convention", "",
+            f"CER as measured is **{m['cer']:.3f}**. The same computation after folding both",
+            f"sides to lowercase gives **{m['cer_case_insensitive']:.3f}**. The gap is exactly the part of",
+            "the error explained by the writing rule rather than by reading: "
             f"**{m['case_share']:.0%}**.", "",
-            f"CER посчитан микроусреднением (правки, делённые на все "
-            f"{m['ref_chars']} символов эталона);",
-            f"макро, то есть среднее по объектам, дало бы {m['cer_macro']:.3f}. "
-            "Разница между ними",
-            "тем больше, чем короче слова, поэтому в отчёте называется, какое взято.", ""]
+            "CER is micro-averaged (edits divided by all "
+            f"{m['ref_chars']} reference characters);",
+            f"macro-averaging, the mean over objects, would give {m['cer_macro']:.3f}. "
+            "The gap between",
+            "the two widens as words get shorter, so a report says which one it quotes.", ""]
 
-    out += ["## Читаемо или нет", "",
-            "Отдельная ось, которой не видят ни IoU, ни CER: объект, который я",
-            "счёл нечитаемым, а эталон прочитал, просто выпадает из расчёта CER",
-            "и молча его улучшает.", "",
-            "| эталон \\ моё | читаемо | нечитаемо |", "|---|---|---|",
-            f"| читаемо | {m['legibility_matrix'][0][0]} | {m['legibility_matrix'][0][1]} |",
-            f"| нечитаемо | {m['legibility_matrix'][1][0]} | {m['legibility_matrix'][1][1]} |",
+    out += ["## Legible or not", "",
+            "A separate axis that neither IoU nor CER can see: an object I called",
+            "illegible and the reference read simply drops out of the CER computation",
+            "and silently improves it.", "",
+            "| reference \\ mine | legible | illegible |", "|---|---|---|",
+            f"| legible | {m['legibility_matrix'][0][0]} | {m['legibility_matrix'][0][1]} |",
+            f"| illegible | {m['legibility_matrix'][1][0]} | {m['legibility_matrix'][1][1]} |",
             "",
-            f"Доля совпадений {m['legibility_agreement']:.3f} при каппе "
-            f"{m['legibility_kappa']:.3f}: каппа стоит рядом потому,",
-            "что при редком классе доля совпадений высока сама по себе.", ""]
+            f"Raw agreement {m['legibility_agreement']:.3f} against a kappa of "
+            f"{m['legibility_kappa']:.3f}. The kappa stands next to it",
+            "because with a rare class the raw share is high all by itself.", ""]
 
     if pairs:
-        out += ["## Разбор худших пар", "",
-                "Синий — эталон, оранжевый — моё. У каждой пары подписаны обе оси.", ""]
+        out += ["## The worst pairs", "",
+                "Blue is the reference, orange is mine. Both axes are quoted for each.", ""]
         for item in pairs:
             key = f"{Path(item['image']).stem}_{item['gt_id']}"
-            cer_text = "—" if item["cer"] is None else f"{item['cer']:.3f}"
-            axis = "геометрия" if item["source"] == "geometry" else "текст"
-            out += [f"### {item['image']} · эталон #{item['gt_id']} · {axis}", "",
+            cer_text = "--" if item["cer"] is None else f"{item['cer']:.3f}"
+            axis = "geometry" if item["source"] == "geometry" else "text"
+            out += [f"### {item['image']} · reference #{item['gt_id']} · {axis}", "",
                     f"IoU {item['iou']:.3f} · CER {cer_text} · "
-                    f"«{item['gt_text']}» против «{item['my_text']}»", "",
+                    f"\"{item['gt_text']}\" against \"{item['my_text']}\"", "",
                     f"![{key}]({a.review}/{item['file']})", "",
                     f"<!-- note:{key} -->", notes.get(key, PLACEHOLDER),
                     "<!-- /note -->", ""]
 
-    out += ["## Что дальше", "",
-            "- Инструкция и решения по спорным случаям — "
+    if splits:
+        worst = max(s["iou"] for s in splits)
+        out += ["## Split pairs", "",
+                f"{len(splits)} objects that both sides found and read identically, and",
+                "that still formed no pair: the contours disagreed enough to fall under",
+                f"the matching threshold of {m['iou_threshold']}. All of them land between",
+                f"{min(s['iou'] for s in splits):.3f} and {worst:.3f} -- just short of it.", "",
+                "This category is invisible in the tables above. It hides inside the",
+                "unmatched counts, where nothing distinguishes it from a word one side",
+                "never annotated at all, even though the two mean opposite things: one is",
+                "a miss, the other is a boundary convention. The name is borrowed from",
+                "stage A2, where the same thing happened to polygons.", ""]
+        for item in splits:
+            key = f"split_{Path(item['image']).stem}_{item['gt_id']}"
+            out += [f"### {item['image']} · \"{item['gt_text']}\"", "",
+                    f"IoU {item['iou']:.3f} · vertices "
+                    f"{item['gt_vertices']}/{item['my_vertices']} · read identically", "",
+                    f"![{key}]({a.review}/split/{item['file']})", "",
+                    f"<!-- note:{key} -->", notes.get(key, PLACEHOLDER),
+                    "<!-- /note -->", ""]
+
+    out += ["## Where to go next", "",
+            "- Guidelines and the disputed-case decisions — "
             "[annotation/GUIDELINES.md](annotation/GUIDELINES.md)",
-            "- Полный отчёт — [reports/ocr_report.md](reports/ocr_report.md)",
-            "- Долг по написанному не мной коду — [DEBT.md](DEBT.md)", "",
-            "Остальные этапы портфолио по качеству разметки:", "",
-            "- [A2, полигоны](https://github.com/daviddolya/polygon-annotation-agreement)"
-            " — mask IoU, Dice, Boundary IoU; оттуда перенесён `common/polygons.py`",
-            "- [A3, треки](https://github.com/daviddolya/tracking-annotation-agreement)"
-            " — IDF1, ID switches, конвенция края кадра",
-            "- [A4, скелеты](https://github.com/daviddolya/keypoint-annotation)"
-            " — OKS, PCK, согласие по видимости",
-            "- [P2, боксы](https://github.com/daviddolya/detection-annotation-quality)"
-            " — kappa 0.914, средний IoU 0.867 на 100 кадрах", "",
-            "README пересобирается `tools/build_readme.py`; комментарии между маркерами",
-            "`<!-- note:… -->` и `<!-- /note -->` при пересборке сохраняются.", ""]
+            "- Full report — [reports/ocr_report.md](reports/ocr_report.md)",
+            "- Debt on code I did not write myself — [DEBT.md](DEBT.md)", "",
+            "The other stages of this annotation-quality portfolio:", "",
+            "- [A2, polygons](https://github.com/daviddolya/polygon-annotation-agreement)"
+            " — mask IoU, Dice, Boundary IoU; `common/polygons.py` is ported from there",
+            "- [A3, tracks](https://github.com/daviddolya/tracking-annotation-agreement)"
+            " — IDF1, ID switches, the frame-border convention",
+            "- [A4, skeletons](https://github.com/daviddolya/keypoint-annotation)"
+            " — OKS, PCK, visibility-flag agreement",
+            "- [P2, boxes](https://github.com/daviddolya/detection-annotation-quality)"
+            " — kappa 0.914, mean IoU 0.867 over 100 frames", "",
+            "The README is rebuilt by `tools/build_readme.py`; the commentary between the",
+            "`<!-- note:… -->` and `<!-- /note -->` markers survives a rebuild.", ""]
 
     a.readme.write_text("\n".join(out), encoding="utf-8")
     kept = sum(1 for v in notes.values() if v != PLACEHOLDER)
-    print(f"{a.readme}: разделов по парам {len(pairs)}, "
-          f"сохранено комментариев {kept}")
+    print(f"{a.readme}: pair sections {len(pairs)}, split sections {len(splits)}, "
+          f"comments kept {kept}")
     return 0
 
 

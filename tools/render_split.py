@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Отрисовка split pairs: обе стороны разметили то же слово, пара не сложилась.
+"""Rendering split pairs: both sides annotated the same word, no pair formed.
 
-Такие объекты не попадают ни в `pairs`, ни в картинки шага 6.1 — они лежат
-в обоих списках «без пары», и по таблице их не отличить от настоящего
-пропуска. Скрипт находит их по совпадению транскрипции внутри кадра,
-считает IoU и рисует тем же `render_pair`, что и худшие пары.
+These objects appear in neither `pairs` nor the stage 6.1 images -- they sit
+in both "unmatched" lists, where a table cannot tell them apart from a genuine
+miss. They are a different thing entirely: the word was found by both sides
+and read identically, and only the contour disagreed enough to fall under the
+matching threshold. The category is borrowed from stage A2, where it was
+called a split pair for the same reason.
+
+The script finds them by matching transcriptions within a frame, computes the
+IoU the pair would have had, and draws them with the same `render_pair` used
+for the worst pairs.
 
     .venv/bin/python tools/render_split.py --metrics reports/ocr_metrics.json \
         --gt data/totaltext/gt --mine annotation/my_labels \
@@ -15,6 +21,8 @@ import argparse
 import json
 import sys
 from pathlib import Path
+
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "common"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -44,7 +52,7 @@ def main() -> int:
     gt = by_image(load_totaltext(args.gt))
     mine = by_image(load_cvat_icdar(args.mine))
     args.out.mkdir(parents=True, exist_ok=True)
-    font, cyrillic = load_font(15)
+    font, truetype = load_font(15)
 
     free_gt = {(u["image"], u["id"]) for u in metrics["unmatched_gt_list"]}
     free_my = {(u["image"], u["id"]) for u in metrics["unmatched_mine_list"]}
@@ -65,16 +73,22 @@ def main() -> int:
                 found.append((image, i, j, r, m))
                 break
 
-    print(f"split pairs найдено: {len(found)}")
+    print(f"split pairs found: {len(found)}")
+    made = []
     for n, (image, i, j, r, m) in enumerate(sorted(found), 1):
         path = args.images / image
-        from PIL import Image
         with Image.open(path) as im:
             iou = poly_iou(r, m, im.width, im.height)
-        out = args.out / f"{n:02d}_{Path(image).stem}_{r.text}.jpg"
-        render_pair(path, r, m, iou, None, out, font, cyrillic)
-        print(f"  {image} «{r.text}»: IoU {iou:.3f}, вершин {r.vertices}/{m.vertices}")
-    print(f"каталог: {args.out}")
+        name = f"{n:02d}_{Path(image).stem}_{r.text}.jpg"
+        render_pair(path, r, m, iou, None, args.out / name, font, truetype)
+        made.append({"file": name, "image": image, "gt_id": i, "my_id": j,
+                     "iou": iou, "gt_text": r.text, "my_text": m.text,
+                     "gt_vertices": r.vertices, "my_vertices": m.vertices})
+        print(f"  {image} \"{r.text}\": IoU {iou:.3f}, "
+              f"vertices {r.vertices}/{m.vertices}")
+    (args.out / "split_manifest.json").write_text(
+        json.dumps(made, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"directory: {args.out}")
     return 0
 
 

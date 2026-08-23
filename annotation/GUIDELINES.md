@@ -1,181 +1,193 @@
-# Инструкция по разметке текста в сцене
+# Scene-text annotation guidelines
 
-Версия 1, 2026-08-23, написана до разметки. Датасет: Total-Text, 10 кадров,
-разметка вслепую — эталон не открывается до сдачи партии. Правки после
-разбора расхождений идут ниже отдельным разделом с датой; версия 1
-остаётся как есть.
+Version 1, written before annotating. Dataset: Total-Text, 10 frames,
+annotated blind -- the ground truth is not opened until the batch is handed
+in. Revisions made after the disagreement analysis are appended below as a
+separate dated section; version 1 stays exactly as it was.
 
-Четыре правила ниже — принятые решения, а не «правильные ответы».
-Каждое объявляется при сдаче партии вместе с ценой, которую оно стоит.
+The five rules below are decisions taken, not correct answers. Each one is
+declared when the batch is handed in, together with what it costs.
 
-## 1. Регистр
+## 1. Case
 
-Все транскрипции привожу к ВЕРХНЕМУ регистру. «Exit» записываю как «EXIT»,
-«McDonald's» как «MCDONALD'S».
+Every transcription is folded to UPPERCASE. "Exit" is written EXIT,
+"McDonald's" becomes MCDONALD'S.
 
-Обоснование. Эталон Total-Text регистр передаёт, а не нормализует: из 2215
-читаемых объектов 65% записаны целиком заглавными, 9% строчными, 20%
-смешанно. Значит, моё правило с эталоном расходится намеренно, и цена
-расхождения посчитана заранее: на моих десяти кадрах 0.227 CER, на всём
-наборе 0.245. Для сравнения, нижний регистр стоил бы 0.719 и 0.702 —
-приведение к верхнему втрое дешевле просто потому, что две трети эталона
-и так заглавными.
+Rationale. Total-Text passes case through rather than normalising it: of 2215
+legible objects, 65% are written entirely in capitals, 9% entirely lowercase,
+20% mixed. So my rule diverges from the reference deliberately, and the price
+of that divergence was measured in advance: 0.227 CER on my ten frames, 0.245
+over the whole set. For comparison, lowercase would have cost 0.719 and 0.702
+-- folding up is three times cheaper simply because two thirds of the
+reference is capitals already.
 
-Почему всё-таки нормализую. Регистр — самый крупный источник расхождения
-между руками, а не между глазами: два разметчика, прочитавшие вывеску
-одинаково, разойдутся на том, была ли она набрана капителью или капсом.
-Однозначное правило снимает этот класс споров целиком и проверяется
-автоматически. Плата — постоянное смещение против этого конкретного
-эталона, и оно должно быть видно в отчёте, а не спрятано.
+Why normalise at all. Case is the largest source of disagreement between
+hands, not between eyes: two annotators who read a sign identically will still
+differ on whether it was set in small caps or full caps. An unambiguous rule
+removes that entire class of dispute and can be checked automatically. The
+price is a constant bias against this particular ground truth, and that bias
+has to be visible in the report rather than hidden.
 
-Как это читать в метрике. В отчёте CER приводится дважды: как есть и при
-приведении обеих сторон к одному регистру. Разница между ними — доля
-ошибки, которую даёт конвенция, а не чтение; `ocr_agreement.py` считает
-её сам и печатает процентом. Ожидаемый порядок первой величины — около
-0.2 даже при безупречном чтении, и это не повод менять разметку задним
-числом.
+How to read it in the metric. The report quotes CER twice: as measured, and
+with both sides folded to the same case. The gap between them is the share of
+error contributed by the convention rather than by reading;
+`ocr_agreement.py` computes it and prints it as a percentage. Expect the first
+figure to sit around 0.2 even with flawless reading, and that is not a reason
+to change the annotation after the fact.
 
-## 2. Знаки препинания и апострофы
+## 2. Punctuation and apostrophes
 
-Транскрибирую как есть: апостроф в «JOE'S», дефис в «DRIVE-IN», точку
-в «ST.», амперсанд в «B&B». Типографские кавычки и апострофы (’ “ ”)
-привожу к прямым (' ").
+Transcribed as they appear: the apostrophe in JOE'S, the hyphen in DRIVE-IN,
+the period in ST., the ampersand in B&B. Typographic quotes and apostrophes
+(' " ") are folded to their straight equivalents.
 
-Обоснование. Знаки встречаются у 55 объектов из 2215 (2%) и стоят CER
-0.005 на всём наборе; на моих десяти кадрах их нет вовсе, поэтому здесь
-правило стоит ровно 0.000. Записываю его ради следующей партии: неназванное,
-оно даёт расхождение там, где его никто не ждёт. Приведение типографских
-знаков к прямым — отдельное решение внутри этого пункта: на глаз ’ и '
-неразличимы, а для CER это разные символы.
+Rationale. Marks occur on 55 objects out of 2215 (2%) and cost CER 0.005 over
+the whole set; on my ten frames there are none at all, so here the rule costs
+exactly 0.000. It is written down for the next batch: unstated, it produces
+disagreement in a place nobody is watching. Folding typographic marks to
+straight ones is a separate decision inside this rule: to the eye ' and ' are
+indistinguishable, and to CER they are different characters.
 
-## 3. Нечитаемый текст
+## 3. Illegible text
 
-Полигон обвожу всегда, транскрипцию пишу как «#». Объект целиком
-не пропускаю.
+The contour is always drawn and the transcription written as "#". The object
+is never skipped altogether.
 
-Порог. Читаемо — значит, могу назвать каждый символ, глядя только на него.
-Догадка по контексту, по логотипу или по знанию бренда не считается: если
-я «знаю», что на вывеске написано, но отдельные буквы не различаю, ставлю «#».
+The threshold. Legible means I can name every character while looking at that
+character alone. Guessing from context, from a logo, or from knowing the brand
+does not count: if I "know" what the sign says but cannot make out individual
+letters, it gets "#".
 
-Обоснование. Пропущенный объект и объект, помеченный нечитаемым, — разные
-вещи. Первый выпадает из сопоставления и портит геометрическую метрику,
-второй в ней участвует и честно не участвует в CER. Строгий порог даёт
-больше «#» и меньше материала для CER, зато не смешивает чтение
-с узнаванием: узнанное по контексту слово — это уже не то, что умеет
-проверить метрика. В эталоне нечитаемых 332 из 2547 (13%), то есть
-решение штатное, а не аварийное.
+Rationale. A skipped object and an object marked illegible are different
+things. The first drops out of matching and damages the geometric metric; the
+second takes part in it and honestly stays out of CER. A strict threshold
+yields more "#" and less material for CER, but it keeps reading apart from
+recognition: a word recognised from context is no longer the thing the metric
+can check. The reference marks 332 of 2547 objects illegible (13%), so the
+decision is routine rather than exceptional.
 
-## 4. Обрезанный краем кадра текст
+## 4. Text cut off by the frame border
 
-Контур за границу изображения не вывожу — обвожу видимую часть.
-Транскрибирую то, что видно, всегда: «PARKING», обрезанное до «ARK»,
-записываю как «ARK». Не досочиняю невидимое и не помечаю «#».
+The contour is never carried past the image boundary -- only the visible part
+is outlined. Whatever is visible is transcribed, always: PARKING cropped down
+to ARK is written ARK. Nothing invisible is invented and nothing is marked "#"
+on account of being cropped.
 
-Обоснование. Контур за границу не выводит и эталон — из 366 вершин моего
-набора наружу не выходит ни одна. Про транскрипцию обрезанного слова
-эталон не сообщает ничего, это моё решение, и я выбрал то, которое
-не требует оценивать на глазок долю невидимого: любой порог вида «меньше
-половины слова» заставляет угадывать длину слова, которого не видно.
-Плата — обрывки вроде «ARK» в данных; они честные, и правило про них
-объявлено.
+Rationale. The reference does not carry contours past the border either: of
+the 366 vertices in my set, not one falls outside the image. About the
+transcription of a cropped word the reference says nothing, so this is my
+decision, and I picked the one that does not require eyeballing how much is
+missing: any threshold of the form "less than half the word" forces me to
+guess the length of a word I cannot see. The price is fragments like ARK in
+the data; they are honest, and the rule that produces them is declared.
 
-На этих десяти кадрах правило не сработает ни разу: ни один объект края
-не касается. Записываю его заранее, потому что это уже третий этап, где
-край кадра оказывается отдельным решением, и каждый раз ответ разный.
-На A3 эталон MOT17 бокс за границу вёл (72 из 77 моих пропусков пришлись
-на это), на A4 эталон COCO точку за границей не ставил вовсе — ноль
-из 40 255. Конвенция — свойство датасета, а не правильности,
-и объявлять её надо каждый раз.
+On these ten frames the rule never fires: no object touches the border. It is
+written down in advance because this is the third stage where the frame border
+turns out to be a decision of its own, and the answer differs every time. On
+A3 the MOT17 reference carried boxes past the border (72 of my 77 misses came
+from that); on A4 the COCO reference placed no point beyond the border at all
+-- zero out of 40,255. A convention is a property of a dataset, not of
+correctness, and it has to be declared each time.
 
-## 5. Контур и число вершин
+## 5. The contour and the number of vertices
 
-Обвожу по границе букв, а не по краю вывески или таблички, на которой они
-написаны: эталон размечает слово, а не носитель.
+The contour follows the glyph boundary, not the edge of the sign or the plate
+the glyphs sit on: the reference annotates the word, not its carrier.
 
-Прямому слову ставлю четыре вершины, изогнутому — восемь. Изогнутым считаю
-слово, у которого видна дуга: заметил изгиб — ставлю восемь.
+A straight word gets four vertices, a curved one eight. A word counts as
+curved if any arc is visible: notice a bend, use eight.
 
-Обоснование. Описанный прямоугольник вместо контура стоит на эталоне IoU 0.885
-на горизонтальном слове и 0.502 на криволинейном — то есть половину, при
-совершенно одинаковой аккуратности руки. В моём наборе криволинейных объектов
-28 из 67 (42%), поэтому правило задевает почти половину партии.
+Rationale. A bounding box in place of a contour costs the reference IoU 0.885
+on horizontal text and 0.502 on curved -- half of it, at exactly the same
+level of care. Curved objects make up 28 of the 67 in my set (42%), so the
+rule touches nearly half the batch.
 
-Почему именно восемь. Замер на 289 объектах эталона, у которых в контуре 8+
-вершин: оставить 4 вершины — средний IoU 0.461, 6 — 0.726, 8 — 0.904, 10 —
-0.975. Четыре лишних клика удваивают IoU, следующие два дают 0.07 и не окупаются.
-Шесть вершин прошли бы порог сопоставления 0.5, но у 68% объектов IoU остался бы
-ниже 0.8 — партия сдавалась бы на грани.
+Why eight specifically. Measured on the 289 reference objects whose contour
+has 8+ vertices: keeping 4 vertices gives mean IoU 0.461, 6 gives 0.726, 8
+gives 0.904, 10 gives 0.975. Four extra clicks double IoU; the next two buy
+0.07 and do not pay for themselves. Six vertices would clear the matching
+threshold of 0.5, but 68% of objects would stay below 0.8 -- the batch would
+be handed in on the edge.
 
-Про критерий. «Любая видимая дуга» — намеренно простая формулировка, и граница
-у неё размытая: другой разметчик проведёт её иначе, часть наклонных слов попадёт
-то в одну группу, то в другую. Выбрана она потому, что решается за полсекунды
-у каждого объекта; более точный критерий («базовая линия уходит больше чем на
-высоту буквы») требует мерить глазом то, что и так придётся обводить. Цена
-ошибки в эту сторону мала: лишние вершины на прямом слове IoU не портят,
-а недостача на изогнутом стоит 0.4.
+About the criterion. "Any visible arc" is deliberately simple, and its
+boundary is fuzzy: another annotator will draw it elsewhere, and some slanted
+words will fall on one side or the other. It was chosen because it resolves in
+half a second per object; a more precise criterion ("the baseline departs by
+more than the height of a letter") asks me to measure by eye the very thing I
+am about to outline anyway. Erring in this direction is cheap: extra vertices
+on a straight word do not hurt IoU, while too few on a curved one costs 0.4.
 
-Бюджет работы по этому правилу: около 380 вершин на 67 объектов против 366
-в эталоне.
+The work this rule budgets: about 380 vertices over 67 objects, against 366 in
+the reference.
 
 ---
 
-# Правки после разбора, 2026-08-23
+# Revisions after the analysis, 2026-08-23
 
-Версия 1 выше не тронута. Ниже — четыре правила, добавленные после сравнения с
-эталоном на 10 кадрах. У каждого сказано, что случилось и на скольких объектах.
+Version 1 above is untouched. Below are four rules added after comparing
+against the ground truth on 10 frames. Each says what happened and on how many
+objects.
 
-## 6. Частично читаемое слово
+## 6. Partially legible words
 
-Если часть символов разобрать нельзя, а часть можно, пишу «#» **за каждый
-неразобранный символ**, сохраняя позицию: `ISL##D` означает шесть символов, из
-которых два не прочитаны. Объект целиком нечитаемым в этом случае не помечаю.
+If some characters cannot be made out and others can, "#" is written for each
+unreadable character, in place: ISL##D means six characters, two of them
+unread. The object is not marked wholly illegible in that case.
 
-Что случилось: пять объектов партии (`ISL##D`, `#####`, `######`, `###`,
-`# 10 00 # ##`) были записаны именно так, а версия 1 определяла «#» только как
-метку на весь объект. Правило существовало в руках, но не на бумаге.
+What happened: five objects in the batch (ISL##D, #####, ######, ###,
+`# 10 00 # ##`) were written exactly that way, while version 1 defined "#"
+only as a marker for a whole object. The rule existed in the hand but not on
+paper.
 
-Оговорка для метрики: эталон Total-Text так не умеет — у него «#» это всегда
-весь объект. Значит на паре «моё `ISL##D`» против «эталон `#`» CER будет высоким
-не из-за чтения. При сдаче партии правило объявляется вместе с этой оговоркой.
+A caveat for the metric: Total-Text cannot express this -- there "#" is always
+the entire object. So on a pair of my ISL##D against the reference's "#", CER
+will be high for reasons that have nothing to do with reading. The rule is
+declared together with that caveat when the batch is handed in.
 
-## 7. Отступ контура от глифов
+## 7. Contour offset from the glyphs
 
-Веду контур **вплотную к глифам**, без запаса. Правило 5 говорило «по границе
-букв», и этого оказалось мало: «граница букв» допускает и вплотную, и с полями.
+The contour hugs the glyphs, with no margin. Rule 5 said "along the glyph
+boundary", and that turned out to be too loose: a "glyph boundary" admits both
+hugging and a margin.
 
-Что случилось: мой контур оказался меньше эталонного в 40 парах из 43, медиана
-отношения площадей 0.863 — я систематически плотнее на 14%. На мелких объектах
-(площадь меньше 3000 px²) это дало средний IoU 0.729 против 0.831 на крупных, а
-семь пар с одинаковым чтением (THE, PEAK, TM, More, Than, Just, TAYLOR) легли в
-0.411–0.487, то есть впритык под порог сопоставления 0.5, и в пары не попали.
+What happened: my contour was smaller than the reference's in 40 pairs out of
+43, with a median area ratio of 0.863 -- systematically 14% tighter. On small
+objects (area under 3000 px²) that produced mean IoU 0.729 against 0.831 on
+large ones, and seven pairs read identically on both sides (THE, PEAK, TM,
+More, Than, Just, TAYLOR) landed between 0.411 and 0.487, just short of the
+matching threshold of 0.5, and never formed pairs at all.
 
-Правило не меняю — плотный контур для детектора полезнее. Меняю формулировку:
-теперь «вплотную» сказано явно, и при сдаче партии отступ объявляется, потому что
-у эталона он свой и на мелком тексте разница стоит порога.
+The rule itself does not change -- a tight contour is more useful to a
+detector. The wording does: "hugging" is now said out loud, and the offset is
+declared when the batch is handed in, because the reference has its own and on
+small text the difference is worth the whole threshold.
 
-## 8. Порог читаемости привязывается к кеглю
+## 8. The legibility threshold is tied to type size
 
-К правилу 3 добавляется: решение о читаемости принимаю **при обычном масштабе
-просмотра**, не увеличивая кадр специально ради одного объекта.
+Added to rule 3: legibility is decided at ordinary viewing scale, without
+zooming into a single object for its own sake.
 
-Что случилось: я пометил «#» ровно один объект, эталон на тех же кадрах — 18.
-Согласие по читаемости 0.953 при каппе Коэна 0.000: формально почти всё совпало,
-фактически я об этой оси не сообщил ничего. Порог «могу назвать каждый символ»
-оказался порогом зрения и терпения, а не свойством изображения: при достаточном
-увеличении читается почти всё.
+What happened: I marked exactly one object "#" where the reference marked 18
+on the same frames. Agreement on legibility came to 0.953 with a Cohen's kappa
+of 0.000: formally almost everything matched, in practice I reported nothing
+at all on that axis. The threshold "I can name every character" turned out to
+be a threshold of eyesight and patience rather than a property of the image:
+at enough magnification almost anything reads.
 
-## 9. Гранулярность мелкого повторяющегося текста
+## 9. Granularity of small repeated text
 
-Объект — слово, независимо от кегля. Но если мелкий текст образует единый
-декоративный элемент (кольцо вокруг печати, узор из повторяющейся надписи),
-правило гранулярности **спрашивается у заказчика до партии** и записывается в
-инструкцию до разметки.
+An object is a word, whatever its type size. But when small text forms a
+single decorative element -- a ring around a stamp, a pattern of one repeated
+phrase -- the granularity rule is asked of the client before the batch and
+written into the guidelines before annotating.
 
-Что случилось: в img574 вокруг штампа «AWESOME!» по кольцу идёт «SPREAD SOME
-AWESOME» мелким кеглем. Я разметил 15 слов по отдельности, эталон — один объект
-с «#» на весь штамп. Это 15 из 36 моих объектов без пары, 42% всех
-несопоставленных с моей стороны из одного места кадра.
+What happened: in img574 the words SPREAD SOME AWESOME run in small type
+around the AWESOME! stamp. I annotated 15 separate words; the reference
+annotated one object with "#" for the whole stamp. That is 15 of my 36
+unmatched objects -- 42% of everything unmatched on my side, out of one spot
+in one frame.
 
-Обе стороны правы, и это надо назвать прямо: детектору слов нужны слова, приёмке
-вывесок — один объект. Разметчик такую развилку не выбирает, он её обнаруживает,
-и тогда её надо задать заказчику, а не решить молча.
+Both sides are right, and that has to be said plainly: a word detector needs
+words, sign intake needs one object. An annotator does not choose a fork like
+this, an annotator discovers it -- and then it goes to the client rather than
+being settled in silence.

@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
-"""Согласие по текстовой разметке: геометрия и текст отдельно (P4e, шаг 5).
+"""Text-annotation agreement: geometry and text measured apart.
 
-Главный код этапа. Конвейер из четырёх стадий, и главное в нём — что
-стадии 2 и 3 меряют РАЗНЫЕ вещи и не сводятся в одно число.
+The main script of the stage. A four-stage pipeline whose point is that
+stages 2 and 3 measure DIFFERENT things and do not collapse into one number.
 
-  1. КОГО С КЕМ СРАВНИВАТЬ. Внутри кадра мои контуры сопоставляются
-     с эталонными жадно по убыванию mask IoU, порог 0.5. Код сопоставления
-     перенесён из A2 (common/polygons.py, match_polys).
-     Смещение, которое отсюда следует, надо назвать в отчёте: средний IoU
-     считается ТОЛЬКО по сопоставленным парам, а объект, обведённый совсем
-     мимо, в пару не попадёт и метрику не испортит — он окажется в строке
-     «без пары». Поэтому оба числа приводятся рядом.
+  1. WHO IS COMPARED WITH WHOM. Within a frame my contours are matched to the
+     reference ones greedily by descending mask IoU, threshold 0.5. The
+     matching code is ported from A2 (common/polygons.py, match_polys).
+     The bias that follows has to be named in the report: mean IoU is computed
+     ONLY over matched pairs, so a word drawn completely off target never
+     enters a pair and never hurts the metric -- it lands in the "unmatched"
+     row instead. That is why both numbers are always quoted together.
 
-  2. ГЕОМЕТРИЯ. mask IoU на парах, с разбивкой по ориентации эталонного
-     текста: криволинейный, горизонтальный, наклонный. Разбивка тут не
-     украшение — на прямом тексте полигон почти не отличается от рамки,
-     и общий средний IoU без неё ничего не объясняет.
+  2. GEOMETRY. Mask IoU over pairs, broken down by the orientation of the
+     reference text: curved, horizontal, slanted. The breakdown is not
+     decoration -- on straight text a polygon barely differs from a box, and
+     an overall mean IoU without it explains nothing.
 
-  3. ТЕКСТ. CER и WER на парах, где обе стороны сочли объект читаемым.
-     Рядом считается CER при приведении ОБЕИХ сторон к нижнему регистру:
-     разница между двумя числами и есть та часть ошибки, которая
-     объясняется конвенцией записи, а не чтением.
+  3. TEXT. CER and WER over pairs where both sides judged the object legible.
+     Alongside them, the same CER after folding BOTH sides to lowercase: the
+     gap between the two numbers is exactly the part of the error explained by
+     the writing convention rather than by reading.
 
-  4. ЧИТАЕМОСТЬ. Согласие по признаку «читаемо / нечитаемо» отдельной
-     метрикой, с каппой Коэна. Ни IoU, ни CER этой оси не видят: объект,
-     который я счёл нечитаемым, а эталон прочитал, просто выпадает
-     из расчёта CER и молча улучшает его.
+  4. LEGIBILITY. Agreement on "legible / illegible" as its own metric, with
+     Cohen's kappa. Neither IoU nor CER sees this axis: an object I called
+     illegible and the reference read simply drops out of the CER computation
+     and silently improves it.
 
     python3 annotation/ocr_agreement.py --gt data/totaltext/gt \
         --mine annotation/my_labels --selection data/subset/selection_text.json \
@@ -45,16 +45,16 @@ from icdar import by_image, load_cvat_icdar, load_totaltext  # noqa: E402
 from polygons import Poly, match_polys, rasterize  # noqa: E402
 from text import corpus_cer, corpus_wer, cer as pair_cer  # noqa: E402
 
-ORNT_NAMES = {"h": "горизонтальный", "m": "наклонный",
-              "c": "криволинейный", "#": "нечитаемый", "v": "вертикальный"}
+ORNT_NAMES = {"h": "horizontal", "m": "slanted",
+              "c": "curved", "#": "illegible", "v": "vertical"}
 MAX_SIDE = 1600
 
 
 def frame_masks(groups: list[list], ):
-    """Растеризует все объекты кадра в одной локальной рамке.
+    """Rasterises every object of a frame inside one shared local box.
 
-    Рамка общая и урезанная по масштабу: полное разрешение снимка здесь
-    не нужно, а на кадрах в три тысячи пикселей маски съели бы память.
+    The box is shared and scaled down: full photo resolution is not needed
+    here, and on three-thousand-pixel frames the masks would eat memory.
     """
     rings = [o.ring for g in groups for o in g]
     if not rings:
@@ -120,43 +120,43 @@ def main() -> int:
         lost_mine.extend(ms[i] for i in extra)
         lost_gt.extend(gs[j] for j in missing)
 
-    print(f"кадров {len(images)}; эталонных объектов {len(gt)}, своих {len(mine)}")
-    print(f"сопоставление по mask IoU, порог {args.iou_threshold}: "
-          f"пар {len(pairs)}, эталонных без пары {len(lost_gt)}, "
-          f"своих без пары {len(lost_mine)}")
+    print(f"frames {len(images)}; reference objects {len(gt)}, mine {len(mine)}")
+    print(f"matched by mask IoU, threshold {args.iou_threshold}: "
+          f"pairs {len(pairs)}, reference unmatched {len(lost_gt)}, "
+          f"mine unmatched {len(lost_mine)}")
     if not pairs:
-        raise SystemExit("ни одной пары: проверь экспорт через tools/check_export.py")
+        raise SystemExit("no pairs at all: check the export with tools/check_export.py")
 
-    # --- геометрия
+    # --- geometry
     ious = [s for _, _, s in pairs]
     by_ornt = defaultdict(list)
     for g, _, s in pairs:
         by_ornt[g.ornt].append(s)
     print()
-    print(f"mask IoU на парах: средний {statistics.mean(ious):.3f}, "
-          f"медиана {statistics.median(ious):.3f}, минимум {min(ious):.3f}")
-    print("| ориентация эталонного текста | пар | средний IoU |")
+    print(f"mask IoU over pairs: mean {statistics.mean(ious):.3f}, "
+          f"median {statistics.median(ious):.3f}, minimum {min(ious):.3f}")
+    print("| orientation of the reference text | pairs | mean IoU |")
     print("|---|---|---|")
     for key in ("h", "m", "c", "#"):
         v = by_ornt.get(key, [])
         if v:
             print(f"| {ORNT_NAMES[key]} | {len(v)} | {statistics.mean(v):.3f} |")
 
-    # --- текст
+    # --- text
     both = [(g.text, m.text) for g, m, _ in pairs if g.legible and m.legible]
     c = corpus_cer(both)
     w = corpus_wer(both)
     lowered = corpus_cer([(r.lower(), h.lower()) for r, h in both])
     print()
-    print(f"пар, где обе стороны прочитали текст: {len(both)} "
-          f"({c['ref_chars']} символов эталона)")
-    print(f"CER {c['cer']:.3f} (микро) | {c['cer_macro']:.3f} (макро) | "
-          f"WER {w['wer']:.3f} | совпало дословно {c['exact']} из {len(both)}")
-    print(f"CER при приведении обеих сторон к нижнему регистру: {lowered['cer']:.3f}")
+    print(f"pairs where both sides read the text: {len(both)} "
+          f"({c['ref_chars']} reference characters)")
+    print(f"CER {c['cer']:.3f} (micro) | {c['cer_macro']:.3f} (macro) | "
+          f"WER {w['wer']:.3f} | exact matches {c['exact']} of {len(both)}")
+    print(f"CER with both sides folded to lowercase: {lowered['cer']:.3f}")
     share = (c["cer"] - lowered["cer"]) / c["cer"] if c["cer"] > 0 else 0.0
-    print(f"  значит на конвенцию регистра приходится {share:.0%} всей ошибки чтения")
+    print(f"  so the case convention accounts for {share:.0%} of all reading error")
 
-    # --- читаемость
+    # --- legibility
     matrix = [[0, 0], [0, 0]]
     for g, m, _ in pairs:
         matrix[0 if g.legible else 1][0 if m.legible else 1] += 1
@@ -164,24 +164,24 @@ def main() -> int:
     agree = (matrix[0][0] + matrix[1][1]) / total
     k = kappa_2x2(matrix)
     print()
-    print(f"согласие по «читаемо / нечитаемо»: {agree:.3f}, каппа Коэна {k:.3f}")
-    print("| эталон \\ моё | читаемо | нечитаемо |")
+    print(f"agreement on legible / illegible: {agree:.3f}, Cohen's kappa {k:.3f}")
+    print("| reference \\ mine | legible | illegible |")
     print("|---|---|---|")
-    print(f"| читаемо | {matrix[0][0]} | {matrix[0][1]} |")
-    print(f"| нечитаемо | {matrix[1][0]} | {matrix[1][1]} |")
+    print(f"| legible | {matrix[0][0]} | {matrix[0][1]} |")
+    print(f"| illegible | {matrix[1][0]} | {matrix[1][1]} |")
 
     worst_geom = sorted(pairs, key=lambda t: t[2])[:5]
     worst_text = sorted(
         [(g, m, pair_cer(g.text, m.text)) for g, m, _ in pairs
          if g.legible and m.legible], key=lambda t: -t[2])[:5]
     print()
-    print("худшие по геометрии:")
+    print("worst by geometry:")
     for g, m, s in worst_geom:
-        print(f"  {g.image} эталон#{g.ident}: IoU {s:.3f}, вершин {g.vertices}/{m.vertices}, "
-              f"«{g.text}» ↔ «{m.text}»")
-    print("худшие по тексту:")
+        print(f"  {g.image} ref#{g.ident}: IoU {s:.3f}, vertices {g.vertices}/{m.vertices}, "
+              f"\"{g.text}\" vs \"{m.text}\"")
+    print("worst by text:")
     for g, m, value in worst_text:
-        print(f"  {g.image} эталон#{g.ident}: CER {value:.3f}, «{g.text}» ↔ «{m.text}»")
+        print(f"  {g.image} ref#{g.ident}: CER {value:.3f}, \"{g.text}\" vs \"{m.text}\"")
 
     doc = {
         "frames": len(images),
@@ -218,7 +218,7 @@ def main() -> int:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
     print()
-    print(f"метрики: {args.out}")
+    print(f"metrics: {args.out}")
     return 0
 
 

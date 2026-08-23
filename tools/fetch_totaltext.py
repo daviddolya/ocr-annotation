@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Скачивает эталонную разметку Total-Text, тестовая часть (P4e, шаг 0).
+"""Downloads the Total-Text ground truth, test split.
 
-Официальный репозиторий cs-chan/Total-Text-Dataset саму разметку не хранит:
-в README стоят ссылки на Google Drive, а оттуда из командной строки не
-скачать — тот же класс проблемы, что motchallenge.net на A3. Рабочий
-источник — зеркало HuggingFace, раздающее файлы поштучно.
+The official cs-chan/Total-Text-Dataset repository does not host the
+annotations themselves: its README links to Google Drive, which cannot be
+fetched from a command line -- the same class of problem motchallenge.net
+posed on A3. The working source is a HuggingFace mirror that serves the files
+one by one.
 
-Качается только разметка (300 файлов, ~257 КБ). Картинки берёт
-select_text.py, и только те десять, которые попали в отбор.
+Only the annotations are downloaded (300 files, ~257 KB). The images are
+fetched by select_text.py, and only the ten that make the selection.
 
     python3 fetch_totaltext.py --out data/totaltext/gt
 """
@@ -38,7 +39,7 @@ def fetch(url: str, dest: Path, attempts: int = 4) -> int:
             if attempt == attempts:
                 raise
             time.sleep(2 * attempt)
-    raise RuntimeError("недостижимо")
+    raise RuntimeError("unreachable")
 
 
 def main() -> int:
@@ -52,24 +53,24 @@ def main() -> int:
         tree = json.load(r)
     files = [e["path"] for e in tree
              if e["path"].endswith(".txt") and "/poly_gt_" in e["path"]]
-    print(f"файлов разметки в зеркале: {len(files)}")
+    print(f"annotation files in the mirror: {len(files)}")
 
     todo = [p for p in files if not (args.out / Path(p).name).exists()]
     if not todo:
         total = sum(f.stat().st_size for f in args.out.glob("poly_gt_*.txt"))
-        print(f"всё уже на месте: {len(files)} файлов, {total} б")
+        print(f"everything is already here: {len(files)} files, {total} B")
         return 0
 
-    print(f"качаю {len(todo)}")
+    print(f"downloading {len(todo)}")
     with concurrent.futures.ThreadPoolExecutor(args.workers) as pool:
         list(pool.map(lambda p: fetch(BASE + p, args.out / Path(p).name), todo))
 
     have = sorted(args.out.glob("poly_gt_*.txt"))
     total = sum(f.stat().st_size for f in have)
-    print(f"{args.out}: файлов {len(have)}, {total} б")
+    print(f"{args.out}: files {len(have)}, {total} B")
     if len(have) != EXPECTED_FILES:
-        print(f"ожидалось {EXPECTED_FILES} — зеркало могло измениться, "
-              "проверь прежде чем считать")
+        print(f"expected {EXPECTED_FILES} -- the mirror may have changed, "
+              "check before computing anything")
         return 1
     return 0
 

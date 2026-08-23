@@ -1,13 +1,13 @@
 {
-  "source": "Total-Text, тестовая часть, зеркало yunusserhat/Total-Text-Dataset",
-  "task": "полигон по границе слова плюс транскрипция в атрибуте",
+  "source": "Total-Text, test split, mirror yunusserhat/Total-Text-Dataset",
+  "task": "a polygon around the word plus a transcription in an attribute",
   "filters": {
     "objects_per_frame": [
       5,
       9
     ],
     "needs_curved": true,
-    "illegible_at_most": "половина"
+    "illegible_at_most": "half"
   },
   "seed": 7,
   "count": 10,

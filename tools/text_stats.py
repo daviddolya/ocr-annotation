@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Конвенция эталона: как Total-Text записывает текст (P4e, шаг 2).
+"""The reference convention: how Total-Text writes its text.
 
-Без --images считает по всей тестовой части — так меряется конвенция
-датасета вообще, и это то, что нужно знать до разметки. С --images
-ограничивается своим подмножеством: смотреть после разметки.
+Without --images it runs over the whole test split -- that is how the dataset
+convention as such is measured, and that is what needs to be known before
+annotating. With --images it narrows to my own subset, which is something to
+look at afterwards.
 
     python3 tools/text_stats.py --gt data/totaltext/gt
 """
@@ -19,15 +20,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "common"))
 
 from icdar import by_image, load_totaltext  # noqa: E402
 
-ORNT_NAMES = {"c": "криволинейный", "h": "горизонтальный",
-              "m": "наклонный", "#": "нечитаемый", "v": "вертикальный"}
+ORNT_NAMES = {"c": "curved", "h": "horizontal",
+              "m": "slanted", "#": "illegible", "v": "vertical"}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--gt", type=Path, required=True)
     ap.add_argument("--images", type=Path, default=None,
-                    help="selection_text.json — ограничить своим набором")
+                    help="selection_text.json -- narrow to my own subset")
     args = ap.parse_args()
 
     images = None
@@ -35,29 +36,29 @@ def main() -> int:
         images = set(json.loads(args.images.read_text(encoding="utf-8"))["files"])
     objs = load_totaltext(args.gt, images=images)
     if not objs:
-        raise SystemExit("не нашлось ни одного объекта")
+        raise SystemExit("no objects found")
     legible = [o for o in objs if o.legible]
 
-    print(f"кадров {len(by_image(objs))}, объектов {len(objs)}")
-    print(f"нечитаемых (транскрипция «#»): {len(objs) - len(legible)} "
+    print(f"frames {len(by_image(objs))}, objects {len(objs)}")
+    print(f"illegible (transcription \"#\"): {len(objs) - len(legible)} "
           f"({(len(objs) - len(legible)) / len(objs):.0%})")
 
     orn = Counter(o.ornt for o in objs)
     print()
-    print("| ориентация текста | объектов | доля |")
+    print("| text orientation | objects | share |")
     print("|---|---|---|")
     for key, count in orn.most_common():
-        print(f"| {ORNT_NAMES.get(key, key or '—')} | {count} | {count / len(objs):.0%} |")
+        print(f"| {ORNT_NAMES.get(key, key or '--')} | {count} | {count / len(objs):.0%} |")
 
     verts = Counter(o.vertices for o in objs)
     print()
-    print("| вершин у полигона | объектов |")
+    print("| vertices per polygon | objects |")
     print("|---|---|")
     for n, count in sorted(verts.items()):
         if count >= 10 or n <= 6:
             print(f"| {n} | {count} |")
-    print(f"вершин всего {sum(o.vertices for o in objs)}, "
-          f"медиана {statistics.median([o.vertices for o in objs]):.0f}")
+    print(f"vertices in total {sum(o.vertices for o in objs)}, "
+          f"median {statistics.median([o.vertices for o in objs]):.0f}")
 
     texts = [o.text for o in legible]
     with_letters = [s for s in texts if any(c.isalpha() for c in s)]
@@ -71,22 +72,22 @@ def main() -> int:
     digits_only = sum(1 for s in texts if s.isdigit())
 
     print()
-    print(f"читаемых транскрипций {len(texts)}, символов {chars}, "
-          f"медианная длина {statistics.median([len(s) for s in texts]):.0f}")
+    print(f"legible transcriptions {len(texts)}, characters {chars}, "
+          f"median length {statistics.median([len(s) for s in texts]):.0f}")
     print()
-    print("| признак записи | объектов | доля от читаемых |")
+    print("| how it is written | objects | share of legible |")
     print("|---|---|---|")
-    print(f"| ВЕРХНИЙ регистр целиком | {upper} | {upper / len(texts):.0%} |")
-    print(f"| нижний регистр целиком | {lower} | {lower / len(texts):.0%} |")
-    print(f"| смешанный регистр | {mixed} | {mixed / len(texts):.0%} |")
-    print(f"| только цифры | {digits_only} | {digits_only / len(texts):.0%} |")
-    print(f"| есть знак, не буква и не цифра | {with_punct} | {with_punct / len(texts):.0%} |")
+    print(f"| all UPPERCASE | {upper} | {upper / len(texts):.0%} |")
+    print(f"| all lowercase | {lower} | {lower / len(texts):.0%} |")
+    print(f"| mixed case | {mixed} | {mixed / len(texts):.0%} |")
+    print(f"| digits only | {digits_only} | {digits_only / len(texts):.0%} |")
+    print(f"| holds a non-alphanumeric mark | {with_punct} | {with_punct / len(texts):.0%} |")
     print()
-    print(f"заглавных букв {upper_chars} из {chars} символов "
+    print(f"uppercase letters {upper_chars} of {chars} characters "
           f"({upper_chars / chars:.0%})")
     if punct:
-        print("какие знаки вообще встречаются: "
-              + ", ".join(f"«{c}» {n}" for c, n in punct.most_common(8)))
+        print("which marks occur at all: "
+              + ", ".join(f'"{c}" {n}' for c, n in punct.most_common(8)))
     return 0
 
 

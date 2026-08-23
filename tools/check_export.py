@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Проверка экспорта числом до того, как считать метрики (P4e, шаг 4).
+"""Checking the export by the numbers before computing anything.
 
-Четыре вещи ломаются молча и дают не ошибку, а неправильное число:
+Four things break silently and produce not an error but a wrong number:
 
-  1. ТРАНСКРИПЦИИ НЕ УЕХАЛИ. Атрибут назван не `text`, либо выбран формат,
-     который текст не переносит. В файле останутся координаты без кавычек.
-     Симптом на выходе: CER равен единице у всех объектов.
-  2. ПОЛИГОНЫ ОКАЗАЛИСЬ ПРЯМОУГОЛЬНИКАМИ. Все объекты с четырьмя вершинами
-     на криволинейном тексте — это не разметка, а описанные рамки, и IoU
-     упрётся в потолок около 0.5 независимо от старания.
-  3. НЕ ТОТ СОСТАВ КАДРОВ. Экспорт уехал не с той задачи.
-  4. ПУСТЫЕ ТРАНСКРИПЦИИ. Пустая строка и пометка «нечитаемо» — разные
-     вещи: первое значит «забыл набрать», второе — принятое решение.
+  1. THE TRANSCRIPTIONS DID NOT COME OUT. The attribute is not named `text`,
+     or the chosen format does not carry text at all. The files hold bare
+     coordinates with no quoted string. Symptom downstream: CER equals one
+     on every object.
+  2. THE POLYGONS TURNED OUT TO BE BOXES. Every object with four vertices on
+     curved text is not an annotation but a bounding box, and IoU will hit a
+     ceiling near 0.5 no matter how careful the hand was.
+  3. THE WRONG SET OF FRAMES. The export came from a different task.
+  4. EMPTY TRANSCRIPTIONS. An empty string and an "illegible" marker are
+     different things: the first means "forgot to type it", the second is a
+     decision that was made.
 
     python3 tools/check_export.py --mine annotation/my_labels \
         --selection data/subset/selection_text.json
@@ -31,7 +33,7 @@ from icdar import ILLEGIBLE, by_image, load_cvat_icdar  # noqa: E402
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--mine", type=Path, required=True,
-                    help="каталог с gt_<image>.txt из экспорта")
+                    help="directory holding gt_<image>.txt from the export")
     ap.add_argument("--selection", type=Path, default=None)
     args = ap.parse_args()
 
@@ -39,47 +41,47 @@ def main() -> int:
     problems = 0
 
     if not objs:
-        print("ОБЪЕКТОВ НОЛЬ. Либо задача не переведена в completed, либо формат")
-        print("выбран не тот: нужен именно ICDAR Text Localization 1.0.")
+        print("ZERO OBJECTS. Either the task was never moved to completed, or the")
+        print("wrong format was chosen: it has to be ICDAR Text Localization 1.0.")
         return 1
 
     grouped = by_image(objs)
-    print(f"кадров {len(grouped)}, объектов {len(objs)}, "
-          f"вершин всего {sum(o.vertices for o in objs)}")
+    print(f"frames {len(grouped)}, objects {len(objs)}, "
+          f"vertices in total {sum(o.vertices for o in objs)}")
 
     empty = [o for o in objs if o.text == ""]
     illegible = [o for o in objs if o.text in ILLEGIBLE]
     legible = [o for o in objs if o.legible]
-    print(f"транскрипции: заполнено {len(legible)}, "
-          f"помечено нечитаемым {len(illegible)}, пусто {len(empty)}")
+    print(f"transcriptions: filled {len(legible)}, "
+          f"marked illegible {len(illegible)}, empty {len(empty)}")
     if not legible:
         problems += 1
-        print("НИ ОДНОЙ ТРАНСКРИПЦИИ. Атрибут называется не `text`, либо формат")
-        print("экспорта текст не переносит. Считать нечего.")
+        print("NOT A SINGLE TRANSCRIPTION. The attribute is not named `text`, or the")
+        print("export format does not carry text. There is nothing to compute.")
     elif empty:
         problems += 1
-        print(f"{len(empty)} объектов с пустой транскрипцией. Пустая строка — это")
-        print("«забыл набрать»; осознанное «не читается» пишется как «#».")
+        print(f"{len(empty)} objects with an empty transcription. An empty string means")
+        print("\"forgot to type it\"; a deliberate \"cannot be read\" is written as \"#\".")
 
     verts = Counter(o.vertices for o in objs)
     four = verts.get(4, 0)
-    print(f"вершин на объект: " + ", ".join(
-        f"{n} у {c}" for n, c in sorted(verts.items())))
+    print("vertices per object: " + ", ".join(
+        f"{n} on {c}" for n, c in sorted(verts.items())))
     if four == len(objs):
         problems += 1
-        print("У ВСЕХ ОБЪЕКТОВ РОВНО ЧЕТЫРЕ ВЕРШИНЫ. Похоже, размечены рамки,")
-        print("а не контуры: на криволинейном тексте это потолок IoU около 0.5.")
+        print("EVERY OBJECT HAS EXACTLY FOUR VERTICES. These look like boxes rather")
+        print("than contours: on curved text that caps IoU at around 0.5.")
     elif four > 0.8 * len(objs):
-        print(f"четырёхвершинных {four} из {len(objs)} — многовато для набора,")
-        print("где больше трети текста криволинейный. Стоит посмотреть глазами.")
+        print(f"four-vertex objects {four} of {len(objs)} -- rather many for a set")
+        print("where over a third of the text is curved. Worth a look by eye.")
 
     up = sum(1 for o in legible if o.text.isupper())
     low = sum(1 for o in legible if o.text.islower())
-    print(f"регистр: ВЕРХНИЙ целиком {up}, нижний целиком {low}, "
-          f"остальные {len(legible) - up - low}")
+    print(f"case: all UPPERCASE {up}, all lowercase {low}, "
+          f"the rest {len(legible) - up - low}")
     if legible and low == len(legible):
-        print("всё в нижнем регистре — это осознанное решение инструкции или нет?")
-        print("Если нет, дешевле переписать сейчас: цена правила — CER около 0.7.")
+        print("everything is lowercase -- is that a deliberate guideline decision?")
+        print("If not, retyping now is cheaper: the rule costs about CER 0.7.")
 
     if args.selection:
         want = set(json.loads(args.selection.read_text(encoding="utf-8"))["files"])
@@ -88,16 +90,16 @@ def main() -> int:
         extra = sorted(have - want)
         if missing:
             problems += 1
-            print(f"НЕТ РАЗМЕТКИ на {len(missing)} кадрах отбора: "
-                  f"{', '.join(missing[:5])}{' …' if len(missing) > 5 else ''}")
+            print(f"NO ANNOTATION on {len(missing)} selected frames: "
+                  f"{', '.join(missing[:5])}{' ...' if len(missing) > 5 else ''}")
         if extra:
-            print(f"лишние кадры вне отбора: {len(extra)}")
+            print(f"frames outside the selection: {len(extra)}")
         if not missing and not extra:
-            print(f"состав кадров совпадает с манифестом отбора ({len(want)})")
+            print(f"the frame set matches the selection manifest ({len(want)})")
 
     print()
-    print("проверка пройдена, можно считать" if problems == 0
-          else f"проблем: {problems}. Сначала чинить, потом считать.")
+    print("check passed, safe to compute" if problems == 0
+          else f"problems: {problems}. Fix first, compute after.")
     return 0 if problems == 0 else 1
 
 

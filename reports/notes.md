@@ -1,158 +1,176 @@
-# Рабочие заметки
+# Working notes
 
-## Шаг 1 — CER и WER
+## Step 1 -- CER and WER
 
-Предсказание: CER для «PARKING» против «parking» будет примерно 1.0
-Вышло: ровно 1.0000. Все пять контрольных случаев сошлись.
+Prediction: CER for "PARKING" against "parking" will be about 1.0
+Outcome: exactly 1.0000. All five control cases matched.
 
-Почему так: CER считает правки посимвольно, а «P»→«p» — такая же замена,
-как «P»→«X». Семь букв, семь замен, длина эталона семь. Метрика не знает,
-что буква «та же»: для неё регистр — не оформление, а 70% символов набора.
-Отсюда же 1.6667 в четвёртом случае: знаменатель — эталон, а не моя строка,
-поэтому дописанное сверх эталона выводит CER за единицу.
+Why: CER counts edits character by character, and "P" -> "p" is the same
+substitution as "P" -> "X". Seven letters, seven substitutions, a reference of
+seven. The metric has no notion of "the same letter": to it, case is not
+cosmetics but 70% of the characters in the set. The same reasoning gives
+1.6667 in the fourth case -- the denominator is the reference, not my string,
+so anything written beyond the reference pushes CER past one.
 
-## Шаг 2 — конвенция транскрипции
+## Step 2 -- the transcription convention
 
-Как записывает эталон (300 кадров, 2547 объектов): нечитаемых 332 (13%);
-среди 2215 читаемых ВЕРХНИЙ регистр целиком 65%, нижний 9%, смешанный 20%,
-только цифры 6%. Заглавных букв 8498 из 12108 символов (70%). Знаки
-препинания у 55 объектов (2%), почти целиком апострофы, дефисы и точки.
+How the reference writes text (300 frames, 2547 objects): 332 illegible (13%);
+of the 2215 legible ones, 65% entirely uppercase, 9% lowercase, 20% mixed, 6%
+digits only. Uppercase letters: 8498 of 12,108 characters (70%). Punctuation
+appears on 55 objects (2%), almost entirely apostrophes, hyphens and periods.
 
-Цена правил при безупречном чтении, мои 10 кадров (50 читаемых, 260 символов):
+The price of each rule under flawless reading, my 10 frames (50 legible
+objects, 260 characters):
 
-| правило | CER | WER | затронуто |
+| rule | CER | WER | touched |
 |---|---|---|---|
-| как в эталоне | 0.000 | 0.000 | 0 из 50 |
-| всё к нижнему | 0.719 | 0.880 | 44 из 50 |
-| всё к ВЕРХНЕМУ | 0.227 | 0.260 | 13 из 50 |
-| без знаков препинания | 0.000 | 0.000 | 0 из 50 |
+| as the reference does | 0.000 | 0.000 | 0 of 50 |
+| everything to lowercase | 0.719 | 0.880 | 44 of 50 |
+| everything to UPPERCASE | 0.227 | 0.260 | 13 of 50 |
+| punctuation dropped | 0.000 | 0.000 | 0 of 50 |
 
-На всём наборе то же самое: 0.702, 0.245, 0.005.
+Over the whole set the same: 0.702, 0.245, 0.005.
 
-Вывод: регистр дороже пунктуации в 140 раз. Ориентир этапа — CER ниже 0.1
-на читаемом тексте, и одно правило записи промахивается мимо него в семь раз,
-не сделав ни одной ошибки чтения. Значит, метрика меряет согласие конвенций
-не меньше, чем согласие рук, и конвенция объявляется при сдаче партии.
+Conclusion: case is 140 times more expensive than punctuation. The stage
+benchmark is CER below 0.1 on legible text, and a single writing rule misses
+it by a factor of seven without a single reading error. So the metric measures
+the agreement of conventions no less than the agreement of hands, which is why
+a convention is declared when a batch is handed in.
 
-Решения записаны в `annotation/GUIDELINES.md`, версия 1, до разметки.
+The decisions are recorded in `annotation/GUIDELINES.md`, version 1, before
+annotating.
 
-### Четыре решения, принятые 2026-08-23 до разметки
+### The four decisions taken on 2026-08-23, before annotating
 
-1. **Регистр — привожу всё к ВЕРХНЕМУ.** Осознанное расхождение с эталоном
-   ценой 0.227 CER на моих кадрах. Причина: регистр — крупнейший источник
-   расхождения между руками, однозначное правило снимает класс споров целиком
-   и проверяется автоматически. В отчёте CER идёт дважды, как есть и без
-   регистра, разница показывает цену конвенции.
-2. **Знаки препинания — как есть, типографские к прямым.** Стоит 0.005 на
-   наборе и 0.000 на моих кадрах; правило записано ради следующей партии.
-3. **Порог «читаемо» — могу назвать каждый символ, глядя только на него.**
-   Догадка по контексту и по бренду не считается. Строже, «#» будет больше.
-4. **Край кадра — всегда транскрибирую видимое, без «#» и без досочинения.**
-   Отвергнут порог «меньше половины слова»: он требует оценивать длину слова,
-   которого не видно.
+1. **Case -- fold everything to UPPERCASE.** A deliberate divergence from the
+   reference at a cost of 0.227 CER on my frames. Reason: case is the largest
+   source of disagreement between hands, an unambiguous rule removes the whole
+   class of dispute and can be checked automatically. The report quotes CER
+   twice, as measured and case-insensitive, and the gap shows what the
+   convention costs.
+2. **Punctuation -- as it appears, typographic marks folded to straight.**
+   Costs 0.005 over the set and 0.000 on my frames; written down for the next
+   batch.
+3. **The legibility threshold -- I can name every character while looking at
+   that character alone.** Guessing from context or from the brand does not
+   count. Stricter, so there will be more "#".
+4. **The frame border -- always transcribe what is visible, no "#", nothing
+   invented.** A "less than half the word" threshold was rejected: it requires
+   estimating the length of a word that cannot be seen.
 
-## Шаг 3 — цена геометрии
+## Step 3 -- the price of geometry
 
-Прямоугольник вместо контура, эталон, 2543 объекта: горизонтальный текст 0.885,
-наклонный 0.678, криволинейный 0.502, нечитаемый 0.722. На моих 10 кадрах то же:
-горизонтальный 0.872 (14 объектов), наклонный 0.518 (7), криволинейный 0.497 (28),
-нечитаемый 0.745 (18), всё вместе 0.644.
+A box instead of a contour, reference, 2543 objects: horizontal text 0.885,
+slanted 0.678, curved 0.502, illegible 0.722. The same on my 10 frames:
+horizontal 0.872 (14 objects), slanted 0.518 (7), curved 0.497 (28), illegible
+0.745 (18), everything together 0.644.
 
-Бюджет вершин (289 объектов эталона с 8+ вершинами; оставляем n точек из контура):
+The vertex budget (289 reference objects with 8+ vertices; keeping n points of
+the contour):
 
-| вершин | средний IoU | медиана | доля IoU < 0.8 |
+| vertices | mean IoU | median | share with IoU < 0.8 |
 |---|---|---|---|
 | 4 | 0.461 | 0.477 | 100% |
 | 6 | 0.726 | 0.728 | 68% |
 | 8 | 0.904 | 0.958 | 20% |
 | 10 | 0.975 | 1.000 | 2% |
 
-**Решение: восемь вершин на изогнутом слове, четыре на прямом. Изогнутым считаю
-слово при любой видимой дуге.**
+**Decision: eight vertices on a curved word, four on a straight one. A word
+counts as curved if any arc is visible.**
 
-Почему восемь. Между четырьмя и восемью IoU удваивается (0.461 → 0.904) ценой
-четырёх кликов; между восемью и десятью прибавка 0.07 за ещё два. Шесть вершин
-дали бы 0.726 — выше порога сопоставления 0.5, но у 68% объектов IoU остался бы
-ниже 0.8, то есть партия сдавалась бы на грани.
+Why eight. Between four and eight IoU doubles (0.461 -> 0.904) for four
+clicks; between eight and ten it gains 0.07 for two more. Six would have given
+0.726 -- above the matching threshold of 0.5, but with 68% of objects still
+below 0.8, meaning the batch would be handed in on the edge.
 
-Пересчёт работы: 28 криволинейных по восемь плюс 39 остальных по четыре — около
-380 вершин против 366 у эталона. То есть решение попадает примерно в эталонный
-бюджет, а не удваивает его. Критерий «любая видимая дуга» размытый и может
-затянуть часть из семи наклонных в восьмивершинную группу — тогда ближе к 410.
+Work recomputed: 28 curved objects at eight vertices plus 39 others at four --
+about 380 vertices against 366 in the reference. The decision lands roughly
+inside the reference budget rather than doubling it. The "any visible arc"
+criterion is fuzzy and may pull some of the seven slanted objects into the
+eight-vertex group, which would push it closer to 410.
 
-Отдельно: 28 криволинейных из 67 — это 42%, больше, чем в датасете вообще (38%).
-Отбор кадров требовал наличия криволинейного текста, так что смещение ожидаемое,
-и в отчёте его надо назвать: средний IoU этапа сравнивать с чужими числами
-по Total-Text напрямую нельзя.
+Separately: 28 curved objects out of 67 is 42%, more than in the dataset at
+large (38%). Frame selection required curved text to be present, so the bias
+is expected, and the report has to name it: the mean IoU of this stage cannot
+be compared directly with other people's Total-Text numbers.
 
-## Шаг 4 — экспорт
+## Step 4 -- the export
 
-`check_export.py` до всякого расчёта:
-
-```
-кадров 10, объектов 79, вершин всего 448
-транскрипции: заполнено 78, помечено нечитаемым 1, пусто 0
-вершин на объект: 4 у 40, 5 у 4, 6 у 4, 7 у 4, 8 у 27
-регистр: ВЕРХНИЙ целиком 70, нижний целиком 0, остальные 8
-состав кадров совпадает с манифестом отбора (10)
-```
-
-Обе конвенции соблюдены: регистр верхний везде, кроме восьми объектов (цифры и
-смешанные), 27 объектов получили восемь вершин по правилу 5. Работы вышло 448
-вершин против плановых 380–410 — оценка шага 3 занижена примерно на 12%.
-
-## Шаг 5 — согласие
+`check_export.py` before computing anything:
 
 ```
-кадров 10; эталонных объектов 67, своих 79
-порог сопоставления mask IoU 0.5: пар 43, эталонных без пары 24, своих без пары 36
-mask IoU на парах: средний 0.784, медиана 0.820, минимум 0.516
-  горизонтальный 11 пар 0.814 | наклонный 6 — 0.831
-  криволинейный 24 — 0.769 | нечитаемый 2 — 0.654
-пар, где обе стороны прочитали: 41 (229 символов эталона)
-CER 0.223 (микро) | 0.188 (макро) | WER 0.268 | дословно 30 из 41
-CER при приведении обеих сторон к нижнему регистру: 0.013 → 94% ошибки от конвенции
-согласие «читаемо/нечитаемо» 0.953, каппа Коэна 0.000
+frames 10, objects 79, vertices in total 448
+transcriptions: filled 78, marked illegible 1, empty 0
+vertices per object: 4 on 40, 5 on 4, 6 on 4, 7 on 4, 8 on 27
+case: all UPPERCASE 70, all lowercase 0, the rest 8
+the frame set matches the selection manifest (10)
 ```
 
-Репетиция на подставной разметке прогонялась до своей (`tools/dry_run.py`), конвейер
-отработал: там вся ошибка чтения тоже оказалась ошибкой регистра, 100%.
+Both conventions held: uppercase everywhere except eight objects (digits and
+mixed), and 27 objects got eight vertices under rule 5. The work came to 448
+vertices against the planned 380-410 -- the step 3 estimate was about 12% low.
 
-## Шаг 6.2 — систематические расхождения
+## Step 5 -- agreement
 
-**1. Регистр даёт 94% всей ошибки чтения.** CER 0.223, тот же CER без регистра 0.013.
-Затронуты все 41 пара с текстом. Вывод: чинится не инструкцией, а объявлением
-конвенции при сдаче партии — правило было принято до разметки, цена оценивалась
-заранее в 0.227 на этих же кадрах и совпала с фактом (0.223). Разметку не трогаю.
+```
+frames 10; reference objects 67, mine 79
+matching threshold mask IoU 0.5: pairs 43, reference unmatched 24, mine unmatched 36
+mask IoU over pairs: mean 0.784, median 0.820, minimum 0.516
+  horizontal 11 pairs 0.814 | slanted 6 -- 0.831
+  curved 24 -- 0.769 | illegible 2 -- 0.654
+pairs where both sides read the text: 41 (229 reference characters)
+CER 0.223 (micro) | 0.188 (macro) | WER 0.268 | exact 30 of 41
+CER with both sides folded to lowercase: 0.013 -> 94% of the error is convention
+agreement on legible / illegible 0.953, Cohen's kappa 0.000
+```
 
-**2. Микротекст на печати — 15 объектов из одного штампа.** В img574 красный штамп
-«AWESOME!», по кольцу вокруг него мелким кеглем «SPREAD SOME AWESOME» по кругу.
-Эталон ставит один «#» на весь штамп, я разметил 15 слов по отдельности. Это 15 из
-36 моих объектов без пары — 42% всех несопоставленных с моей стороны из одного
-объекта. Вывод: обе стороны правы, и это развилка задачи, а не ошибка. Детектору
-слов нужны слова, приёмке — один объект. Чинится инструкцией, но правило зависит
-от заказчика и спрашивается до партии, а не выбирается разметчиком.
+The rehearsal on the stand-in annotation ran before the real one
+(`tools/dry_run.py`) and the pipeline held: there too the entire reading error
+turned out to be a case error, 100% of it.
 
-**3. Порог читаемости: 15 эталонных «#» без пары против одного моего.** Согласие по
-читаемости 0.953 при каппе 0.000 — я пометил читаемым практически всё, то есть об
-этой оси не сообщил ничего. Эталон списывает мелкий текст, я его вычитываю. Вывод:
-чинится инструкцией. Порог «могу назвать каждый символ» оказался про зрение, а не
-про размер: при увеличении читается почти всё. Нужна привязка к кеглю.
+## Step 6.2 -- systematic disagreements
 
-**4. Мой контур систематически плотнее эталонного на 14%.** Медиана отношения
-площадей 0.863, мой контур меньше в 40 парах из 43. Эталон обводит с запасом вокруг
-глифов, правило 5 велит вести по границе букв — и я его выполнял. На мелких объектах
-(<3000 px²) средний IoU 0.729 против 0.831 на крупных: постоянный отступ съедает у
-мелкого слова большую долю площади. Отсюда следующий пункт.
+**1. Case gives 94% of all reading error.** CER 0.223, the same CER
+case-insensitive 0.013. All 41 text pairs are affected. Conclusion: fixed not
+by a guideline but by declaring the convention on handover -- the rule was
+adopted before annotating, its price was estimated in advance at 0.227 on
+these very frames, and the estimate matched (0.223). The annotation stays as
+it is.
 
-**5. Семь split pairs — то же слово, пара не сложилась.** THE (IoU 0.411), PEAK
-(0.435), TM (0.419), More (0.478), Than (0.444), Just (0.455), TAYLOR (0.487). Обе
-стороны прочитали одинаково, все семь легли в 0.41–0.49, то есть впритык под порогом
-0.5. Категория та же, что `split pair` на A2. Вывод: чинится инструкцией — объявить
-отступ от глифов; переразметка не нужна, потому что расхождение постоянное и его
-можно снять одной фразой. Картинки в `reports/review/split/`.
+**2. Small text on a stamp -- 15 objects from one element.** In img574 there
+is a red AWESOME! stamp with SPREAD SOME AWESOME running in small type around
+it. The reference marks the whole stamp as one "#"; I annotated 15 separate
+words. That is 15 of my 36 unmatched objects -- 42% of everything unmatched on
+my side, from a single object. Conclusion: both sides are right, and this is a
+fork in the task rather than an error. A word detector needs words, sign
+intake needs one object. Fixed by a guideline, but the rule depends on the
+client and is asked before the batch rather than chosen by the annotator.
 
-**6. Частично читаемое слово — дырка в инструкции v1.** Пять объектов записаны как
-`ISL##D`, `#####`, `######`, `###`, `# 10 00 # ##`: «#» использован посимвольно, а
-версия 1 определяла его только как метку на весь объект. Вывод: правило дописывается
-(см. правки), но задним числом транскрипции не переписываю.
+**3. The legibility threshold: 15 reference "#" unmatched against one of
+mine.** Agreement on legibility 0.953 with a kappa of 0.000 -- I marked
+practically everything legible, so I reported nothing on that axis. The
+reference writes small text off; I read it out. Conclusion: fixed by a
+guideline. The threshold "I can name every character" turned out to be about
+eyesight rather than size: at enough magnification almost anything reads. It
+needs to be tied to type size.
+
+**4. My contour is systematically 14% tighter than the reference's.** Median
+area ratio 0.863; my contour is smaller in 40 pairs of 43. The reference draws
+with a margin around the glyphs while rule 5 says to follow the glyph boundary
+-- and I followed it. On small objects (under 3000 px²) the mean IoU is 0.729
+against 0.831 on large ones: a constant margin eats a larger share of a small
+word. Which leads to the next item.
+
+**5. Seven split pairs -- same word, no pair formed.** THE (IoU 0.411), PEAK
+(0.435), TM (0.419), More (0.478), Than (0.444), Just (0.455), TAYLOR (0.487).
+Both sides read them identically, and all seven land in 0.41-0.49, right under
+the 0.5 threshold. Same category as a split pair on A2. Conclusion: fixed by a
+guideline -- declare the offset from the glyphs; no re-annotation is needed,
+because the divergence is constant and one sentence removes it. Images in
+`reports/review/split/`.
+
+**6. Partially legible words -- a hole in version 1.** Five objects written as
+ISL##D, #####, ######, ###, `# 10 00 # ##`: "#" used per character, while
+version 1 defined it only as a marker for a whole object. Conclusion: the rule
+gets written down (see the revisions), but no transcription is rewritten after
+the fact.

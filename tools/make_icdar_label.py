@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""Готовый конфиг метки для CVAT: полигон плюс транскрипция (P4e, шаг 4).
+"""A ready-made CVAT label config: polygon plus transcription.
 
-Здесь важны два имени, и оба заданы форматом, а не вкусом:
+Two names matter here, and both are dictated by the format rather than taste:
 
-  * метка называется `icdar` — так требует формат ICDAR при импорте
-    (docs.cvat.ai/docs/dataset_management/formats/format-icdar/);
-  * атрибут называется ровно `text` — экспортёр datumaro читает
-    именно это имя (plugins/data_formats/icdar/exporter.py,
-    IcdarTextLocalizationExporter). Назовёшь «transcription» —
-    полигоны выгрузятся без текста, и заметишь ты это уже после разметки.
+  * the label is called `icdar` -- that is what the ICDAR format requires on
+    import (docs.cvat.ai/docs/dataset_management/formats/format-icdar/);
+  * the attribute is called exactly `text` -- the datumaro exporter reads that
+    name and no other (plugins/data_formats/icdar/exporter.py,
+    IcdarTextLocalizationExporter). Name it "transcription" and the polygons
+    export without any text, which you only notice after annotating.
 
-Атрибут делается mutable: транскрипцию правят, не перерисовывая контур.
+The attribute is mutable: a transcription gets corrected without redrawing
+the contour. Its `values` list holds one empty string rather than nothing at
+all -- CVAT's raw label editor rejects an empty array outright.
 
     python3 tools/make_icdar_label.py --out cvat_icdar_label.json
 
-Дальше содержимое файла целиком вставляется во вкладку Raw редактора меток.
+The contents of the file then go into the Raw tab of the label editor.
 """
 
 import argparse
@@ -30,7 +32,7 @@ def build(label: str = "icdar", attribute: str = "text") -> list[dict]:
             "name": attribute,
             "input_type": "text",
             "mutable": True,
-            "values": [],
+            "values": [""],
             "default_value": "",
         }],
     }]
@@ -47,9 +49,9 @@ def main() -> int:
     args.out.write_text(json.dumps(spec, ensure_ascii=False, indent=2),
                         encoding="utf-8")
     a = spec[0]["attributes"][0]
-    print(f"{args.out}: метка «{spec[0]['name']}» типа {spec[0]['type']}, "
-          f"атрибут «{a['name']}» типа {a['input_type']}")
-    print("экспортировать потом в формат ICDAR Text Localization 1.0")
+    print(f"{args.out}: label \"{spec[0]['name']}\" of type {spec[0]['type']}, "
+          f"attribute \"{a['name']}\" of type {a['input_type']}")
+    print("export later to the ICDAR Text Localization 1.0 format")
     return 0
 
 

@@ -1,0 +1,79 @@
+[
+  {
+    "file": "01_img10_THE.jpg",
+    "image": "img10.jpg",
+    "gt_id": 6,
+    "my_id": 5,
+    "iou": 0.4111111111111111,
+    "gt_text": "THE",
+    "my_text": "THE",
+    "gt_vertices": 4,
+    "my_vertices": 4
+  },
+  {
+    "file": "02_img10_PEAK.jpg",
+    "image": "img10.jpg",
+    "gt_id": 7,
+    "my_id": 6,
+    "iou": 0.4349315068493151,
+    "gt_text": "PEAK",
+    "my_text": "PEAK",
+    "gt_vertices": 4,
+    "my_vertices": 4
+  },
+  {
+    "file": "03_img578_TM.jpg",
+    "image": "img578.jpg",
+    "gt_id": 5,
+    "my_id": 2,
+    "iou": 0.41888297872340424,
+    "gt_text": "TM",
+    "my_text": "TM",
+    "gt_vertices": 4,
+    "my_vertices": 4
+  },
+  {
+    "file": "04_img675_More.jpg",
+    "image": "img675.jpg",
+    "gt_id": 1,
+    "my_id": 6,
+    "iou": 0.4781491002570694,
+    "gt_text": "More",
+    "my_text": "MORE",
+    "gt_vertices": 5,
+    "my_vertices": 4
+  },
+  {
+    "file": "05_img675_Than.jpg",
+    "image": "img675.jpg",
+    "gt_id": 2,
+    "my_id": 5,
+    "iou": 0.44396551724137934,
+    "gt_text": "Than",
+    "my_text": "THAN",
+    "gt_vertices": 5,
+    "my_vertices": 4
+  },
+  {
+    "file": "06_img675_Just.jpg",
+    "image": "img675.jpg",
+    "gt_id": 3,
+    "my_id": 4,
+    "iou": 0.45454545454545453,
+    "gt_text": "Just",
+    "my_text": "JUST",
+    "gt_vertices": 4,
+    "my_vertices": 4
+  },
+  {
+    "file": "07_img894_TAYLOR.jpg",
+    "image": "img894.jpg",
+    "gt_id": 7,
+    "my_id": 5,
+    "iou": 0.48741007194244607,
+    "gt_text": "TAYLOR",
+    "my_text": "TAYLOR",
+    "gt_vertices": 6,
+    "my_vertices": 8
+  }
+]
