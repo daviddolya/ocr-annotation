@@ -1,0 +1,15 @@
+[
+  {
+    "name": "icdar",
+    "type": "polygon",
+    "attributes": [
+      {
+        "name": "text",
+        "input_type": "text",
+        "mutable": true,
+        "values": [],
+        "default_value": ""
+      }
+    ]
+  }
+]
