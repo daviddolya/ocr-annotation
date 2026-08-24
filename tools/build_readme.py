@@ -149,21 +149,57 @@ def main() -> int:
                     f"<!-- note:{key} -->", notes.get(key, PLACEHOLDER),
                     "<!-- /note -->", ""]
 
-    out += ["## Where to go next", "",
-            "- Guidelines and the disputed-case decisions — "
+    out += ["## Reproduce", "",
+            "Python 3.10+ with numpy and Pillow.", "", "```bash",
+            "python3 -m venv .venv && .venv/bin/pip install -r requirements.txt",
+            "",
+            "# the five self-test cases with answers known in advance,",
+            "# including the one where CER comes out at 1.667",
+            ".venv/bin/python common/text.py --selftest",
+            "",
+            "# the Total-Text ground truth, test split: 300 files, 257 KB",
+            ".venv/bin/python tools/fetch_totaltext.py --out data/totaltext/gt",
+            "",
+            "# sanity-check the export before computing anything",
+            ".venv/bin/python tools/check_export.py \\",
+            "    --mine annotation/my_labels --selection data/subset/selection_text.json",
+            "",
+            "# the numbers in this README",
+            ".venv/bin/python annotation/ocr_agreement.py \\",
+            "    --gt data/totaltext/gt --mine annotation/my_labels \\",
+            "    --selection data/subset/selection_text.json \\",
+            "    --out reports/ocr_metrics.json",
+            "",
+            "# the pictures above, then this README",
+            ".venv/bin/python tools/render_text.py \\",
+            "    --gt data/totaltext/gt --mine annotation/my_labels \\",
+            "    --images data/subset/frames \\",
+            "    --selection data/subset/selection_text.json --out reports/review",
+            ".venv/bin/python tools/build_readme.py",
+            "```", "",
+            "The 10 frames and my annotation are committed; the ground truth is 257 KB",
+            "and comes down in one command, so every number reproduces from a fresh",
+            "clone.", "",
+            "## What else is here", "",
+            "- Annotation guidelines and the disputed-case decisions — "
             "[annotation/GUIDELINES.md](annotation/GUIDELINES.md)",
             "- Full report — [reports/ocr_report.md](reports/ocr_report.md)",
-            "- Debt on code I did not write myself — [DEBT.md](DEBT.md)", "",
-            "The other stages of this annotation-quality portfolio:", "",
-            "- [A2, polygons](https://github.com/daviddolya/polygon-annotation-agreement)"
-            " — mask IoU, Dice, Boundary IoU; `common/polygons.py` is ported from there",
-            "- [A3, tracks](https://github.com/daviddolya/tracking-annotation-agreement)"
-            " — IDF1, ID switches, the frame-border convention",
-            "- [A4, skeletons](https://github.com/daviddolya/keypoint-annotation)"
-            " — OKS, PCK, visibility-flag agreement",
-            "- [P2, boxes](https://github.com/daviddolya/detection-annotation-quality)"
-            " — kappa 0.914, mean IoU 0.867 over 100 frames", "",
-            "The README is rebuilt by `tools/build_readme.py`; the commentary between the",
+            "- Code I did not write myself, and what I owe an explanation for — "
+            "[DEBT.md](DEBT.md)", "",
+            "## The other stages of this portfolio", "",
+            "| stage | type | headline numbers |", "|---|---|---|",
+            "| P2 | [boxes](https://github.com/daviddolya/detection-annotation-agreement) "
+            "| kappa 0.914, mean IoU 0.867 |",
+            "| A2 | [polygons and masks](https://github.com/daviddolya/polygon-annotation-agreement) "
+            "| mask IoU 0.840, Boundary IoU 0.676 |",
+            "| A3 | [tracks on video](https://github.com/daviddolya/tracking-annotation-agreement) "
+            "| IDF1 0.896, 2 ID switches |",
+            "| A4 | [skeletons](https://github.com/daviddolya/keypoint-annotation-agreement) "
+            "| OKS 0.895, flag agreement 0.822 |",
+            "| A5 | scene text — **this repository** "
+            f"| mask IoU {m['iou_mean']:.3f}, CER {m['cer']:.3f} |", "",
+            "`common/polygons.py` is ported from stage A2 with a note on its provenance.",
+            "", "The README is rebuilt by `tools/build_readme.py`; the commentary between the",
             "`<!-- note:… -->` and `<!-- /note -->` markers survives a rebuild.", ""]
 
     a.readme.write_text("\n".join(out), encoding="utf-8")

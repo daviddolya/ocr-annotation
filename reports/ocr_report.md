@@ -203,5 +203,5 @@ work fit into an evening: 67 reference objects, 448 vertices placed by hand,
 
 - [A2, polygons](https://github.com/daviddolya/polygon-annotation-agreement) — mask IoU, Dice, Boundary IoU; `common/polygons.py` is ported from there
 - [A3, tracks](https://github.com/daviddolya/tracking-annotation-agreement) — IDF1, ID switches, the frame-border convention
-- [A4, skeletons](https://github.com/daviddolya/keypoint-annotation) — OKS, PCK, visibility-flag agreement
-- [P2, boxes](https://github.com/daviddolya/detection-annotation-quality) — kappa 0.914, mean IoU 0.867 over 100 frames
+- [A4, skeletons](https://github.com/daviddolya/keypoint-annotation-agreement) — OKS, PCK, visibility-flag agreement
+- [P2, boxes](https://github.com/daviddolya/detection-annotation-agreement) — kappa 0.914, mean IoU 0.867 over 100 frames
