@@ -83,7 +83,9 @@ because with a rare class the raw share is high all by itself.
 
 ## The worst pairs
 
-Blue is the reference, orange is mine. Both axes are quoted for each.
+Every picture carries its own legend: a blue swatch for the reference, an orange one for mine, the numbers of the case beside them and the frame name underneath.
+
+Both axes are quoted for each.
 
 ### img894.jpg · reference #8 · geometry
 

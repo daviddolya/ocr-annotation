@@ -116,7 +116,8 @@ def main() -> int:
 
     if pairs:
         out += ["## The worst pairs", "",
-                "Blue is the reference, orange is mine. Both axes are quoted for each.", ""]
+                "Every picture carries its own legend: a blue swatch for the reference, an orange one for mine, the numbers of the case beside them and the frame name underneath.", "",
+                "Both axes are quoted for each.", ""]
         for item in pairs:
             key = f"{Path(item['image']).stem}_{item['gt_id']}"
             cer_text = "--" if item["cer"] is None else f"{item['cer']:.3f}"

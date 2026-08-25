@@ -29,34 +29,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "common"))
 
 from icdar import by_image, load_cvat_icdar, load_totaltext  # noqa: E402
 
-REF_COLOR = (60, 130, 246)
-MY_COLOR = (249, 115, 22)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from chrome import (MINE_COLOR as MY_COLOR, REF_COLOR,  # noqa: E402
+                    load_font, with_chrome)
+
 BAD = (220, 38, 38)
 OK = (34, 160, 90)
 
-FONT_CANDIDATES = [
-    "/usr/share/fonts/TTF/DejaVuSans.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/usr/share/fonts/liberation/LiberationSans-Regular.ttf",
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-    "/Library/Fonts/Arial.ttf",
-    "C:/Windows/Fonts/arial.ttf",
-]
-
-
-def load_font(size: int) -> tuple[object, bool]:
-    """Returns (font, whether a TrueType face was found)."""
-    for path in FONT_CANDIDATES:
-        if Path(path).exists():
-            try:
-                return ImageFont.truetype(path, size), True
-            except OSError:
-                continue
-    return ImageFont.load_default(), False
-
 
 def render_pair(image_path: Path, ref, mine, iou, cer, out: Path, font,
-                truetype: bool, target: int = 560) -> None:
+                gt_id=None, target: int = 560) -> None:
     img = Image.open(image_path).convert("RGB")
     xs = [p[0] for p in ref.ring + mine.ring]
     ys = [p[1] for p in ref.ring + mine.ring]
@@ -70,10 +53,14 @@ def render_pair(image_path: Path, ref, mine, iou, cer, out: Path, font,
     crop = crop.resize((max(1, int(crop.width * scale)),
                         max(1, int(crop.height * scale))))
 
-    head = 46
-    canvas = Image.new("RGB", (crop.width, crop.height + head), (255, 255, 255))
-    canvas.paste(crop, (0, head))
-    d = ImageDraw.Draw(canvas)
+    cer_text = "—" if cer is None else f"{cer:.2f}"
+    facts = (f"IoU {iou:.3f} · CER {cer_text} · "
+             f"vertices {ref.vertices}/{mine.vertices}")
+    canvas, d, head, _ = with_chrome(
+        crop, facts=facts, font=font,
+        footer=(image_path.name if gt_id is None
+                else f"{image_path.name} · reference #{gt_id}"),
+        ref_label=f'reference "{ref.text}"', mine_label=f'mine "{mine.text}"')
     for obj, color in ((ref, REF_COLOR), (mine, MY_COLOR)):
         pts = [((x - x0) * scale, (y - y0) * scale + head) for x, y in obj.ring]
         if len(pts) >= 3:
@@ -81,17 +68,10 @@ def render_pair(image_path: Path, ref, mine, iou, cer, out: Path, font,
             d.line(pts + [pts[0]], fill=color, width=3)
         for px, py in pts:
             d.ellipse([px - 3, py - 3, px + 3, py + 3], fill=color)
-    cer_text = "—" if cer is None else f"{cer:.2f}"
-    line1 = (f"IoU {iou:.3f}   CER {cer_text}   "
-             f"vertices {ref.vertices}/{mine.vertices}")
-    d.text((6, 5), line1, fill=(20, 20, 20), font=font)
-    d.text((6, 25), f'"{ref.text}"', fill=REF_COLOR, font=font)
-    w = d.textlength(f'"{ref.text}"', font=font)
-    d.text((16 + w, 25), f'"{mine.text}"', fill=MY_COLOR, font=font)
     canvas.save(out, quality=92)
 
 
-def render_orientation(metrics: dict, out: Path, font, truetype: bool) -> None:
+def render_orientation(metrics: dict, out: Path, font) -> None:
     rows = [(k, v["pairs"], v["iou"])
             for k, v in metrics["iou_by_orientation"].items() if v["pairs"]]
     rows.sort(key=lambda r: r[2])
@@ -112,7 +92,7 @@ def render_orientation(metrics: dict, out: Path, font, truetype: bool) -> None:
     img.save(out)
 
 
-def render_axes(metrics: dict, out: Path, font, truetype: bool) -> None:
+def render_axes(metrics: dict, out: Path, font) -> None:
     """Scatter plot: geometry against text."""
     pts = [(p["iou"], p["cer"]) for p in metrics["pairs"] if p["cer"] is not None]
     size, pad, top = 460, 62, 52
@@ -155,9 +135,7 @@ def main() -> int:
     mine = {(o.image, o.ident): o for o in load_cvat_icdar(args.mine)}
 
     args.out.mkdir(parents=True, exist_ok=True)
-    font, truetype = load_font(16)
-    if not truetype:
-        print("no TrueType face found: captions fall back to the bitmap font")
+    font = load_font(16)
 
     chosen, seen = [], set()
     for source, key in (("geometry", "worst_geometry"), ("text", "worst_text")):
@@ -180,13 +158,13 @@ def main() -> int:
             continue
         name = f"{k:02d}_{source}_{Path(item['image']).stem}_{item['gt_id']}.jpg"
         render_pair(args.images / item["image"], ref, my, pair["iou"], pair["cer"],
-                    args.out / name, font, truetype)
+                    args.out / name, font, gt_id=item["gt_id"])
         made.append({"file": name, "source": source, "image": item["image"],
                      "gt_id": item["gt_id"], "iou": pair["iou"], "cer": pair["cer"],
                      "gt_text": ref.text, "my_text": my.text})
 
-    render_orientation(metrics, args.out / "iou_by_orientation.png", font, truetype)
-    render_axes(metrics, args.out / "geometry_vs_text.png", font, truetype)
+    render_orientation(metrics, args.out / "iou_by_orientation.png", font)
+    render_axes(metrics, args.out / "geometry_vs_text.png", font)
     (args.out / "pairs_manifest.json").write_text(
         json.dumps(made, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"pairs rendered {len(made)}, plus iou_by_orientation.png "

@@ -52,7 +52,7 @@ def main() -> int:
     gt = by_image(load_totaltext(args.gt))
     mine = by_image(load_cvat_icdar(args.mine))
     args.out.mkdir(parents=True, exist_ok=True)
-    font, truetype = load_font(15)
+    font = load_font(15)
 
     free_gt = {(u["image"], u["id"]) for u in metrics["unmatched_gt_list"]}
     free_my = {(u["image"], u["id"]) for u in metrics["unmatched_mine_list"]}
@@ -80,7 +80,7 @@ def main() -> int:
         with Image.open(path) as im:
             iou = poly_iou(r, m, im.width, im.height)
         name = f"{n:02d}_{Path(image).stem}_{r.text}.jpg"
-        render_pair(path, r, m, iou, None, args.out / name, font, truetype)
+        render_pair(path, r, m, iou, None, args.out / name, font, gt_id=i)
         made.append({"file": name, "image": image, "gt_id": i, "my_id": j,
                      "iou": iou, "gt_text": r.text, "my_text": m.text,
                      "gt_vertices": r.vertices, "my_vertices": m.vertices})
